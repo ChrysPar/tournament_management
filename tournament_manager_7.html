@@ -356,7 +356,6 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
 </div>
 
 <script>
-<script>
 // 1. Ρυθμίσεις Supabase - Βάλε τα δικά σου στοιχεία εδώ
 const SUPABASE_URL = 'ΤΟ_URL_ΣΟΥ';
 const SUPABASE_KEY = 'ΤΟ_ANON_KEY_ΣΟΥ';
@@ -369,19 +368,20 @@ let pendingAthletes = [], pendingMatches = [];
 
 // 3. Εκκίνηση εφαρμογής - Φορτώνει τα πάντα από το Cloud
 async function init() {
-    try {
-        // Φόρτωση Αθλητών
-        const athletesRes = await _supabase.from('athletes').select('*');
-        if (athletesRes.error) throw athletesRes.error;
-        db.athletes = athletesRes.data || [];
+   try {
+        const { data: athletes, error: aErr } = await _supabase.from('athletes').select('*');
+        if (aErr) throw aErr;
+        db.athletes = athletes || [];
 
-        // Φόρτωση Αγώνων
-        const matchesRes = await _supabase.from('matches').select('*, athlete1:athlete1_id(*), athlete2:athlete2_id(*)');
-        if (matchesRes.error) throw matchesRes.error;
-        db.matches = matchesRes.data || [];
+        const { data: matches, error: mErr } = await _supabase
+            .from('matches')
+            .select('*, athlete1:athlete1_id(*), athlete2:athlete2_id(*)');
+        if (mErr) throw mErr;
+        db.matches = matches || [];
 
-        console.log("Σύνδεση με Supabase επιτυχής!");
+        console.log("Συγχρονισμός με Supabase επιτυχής!");
         renderAthletes();
+        renderMatches();
     } catch (e) {
         console.error("Σφάλμα κατά την εκκίνηση:", e.message);
         showAlert('reg-alert', 'Αποτυχία σύνδεσης με τη βάση δεδομένων.', 'error');
@@ -390,33 +390,31 @@ async function init() {
 
 // 4. Εγγραφή Αθλητή στο Supabase
 async function registerAthlete() {
-    const name = document.getElementById('f-name').value.trim();
-    const team = document.getElementById('f-team').value.trim();
-    const gender = document.getElementById('f-gender').value;
-    const weight = parseFloat(document.getElementById('f-weight').value);
-    const year = parseInt(document.getElementById('f-year').value);
-    const exp = parseInt(document.getElementById('f-exp').value);
-    const sport = document.getElementById('f-sport').value;
+    const fields = {
+        name: document.getElementById('f-name').value.trim(),
+        team: document.getElementById('f-team').value.trim(),
+        gender: document.getElementById('f-gender').value,
+        weight: parseFloat(document.getElementById('f-weight').value),
+        year: parseInt(document.getElementById('f-year').value),
+        exp: parseInt(document.getElementById('f-exp').value),
+        sport: document.getElementById('f-sport').value,
+        paired: false
+    };
 
-    if (!name || !team || !gender || !weight || !year || isNaN(exp) || !sport) {
-        showAlert('reg-alert', 'Παρακαλώ συμπληρώστε όλα τα πεδία.', 'error');
+    if (Object.values(fields).some(v => v === "" || v === null || isNaN(v))) {
+        showAlert('reg-alert', 'Συμπλήρωσε όλα τα πεδία!', 'error');
         return;
     }
 
-    const newAthlete = { name, team, gender, weight, year, exp, sport, paired: false };
-
-    const { data, error } = await _supabase.from('athletes').insert([newAthlete]).select();
+    const { data, error } = await _supabase.from('athletes').insert([fields]).select();
 
     if (error) {
         showAlert('reg-alert', 'Σφάλμα Cloud: ' + error.message, 'error');
     } else {
         db.athletes.push(data[0]);
-        showAlert('reg-alert', `Ο αθλητής <strong>${name}</strong> καταχωρήθηκε επιτυχώς!`, 'success');
-        
         // Καθαρισμός πεδίων
+        showAlert('reg-alert', `Ο αθλητής <strong>${fields.name}</strong> καταχωρήθηκε!`, 'success');
         ['f-name', 'f-team', 'f-weight', 'f-year', 'f-exp'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('f-gender').value = '';
-        document.getElementById('f-sport').value = '';
         renderAthletes();
     }
 }
@@ -449,28 +447,27 @@ function openEditModal(id){
   document.getElementById('edit-modal').classList.add('open');
 }
 function closeEditModal(){document.getElementById('edit-modal').classList.remove('open');editingId=null;}
-async function saveEdit(){
-  const a=db.athletes.find(x=>x.id===editingId);if(!a)return;
-  const w=parseFloat(document.getElementById('edit-weight').value);
-  const sp=document.getElementById('edit-sport').value;
-  const ex=parseInt(document.getElementById('edit-exp').value);
-  const tm=document.getElementById('edit-team').value.trim();
-  const nm=document.getElementById('edit-name').value.trim();
-  const errs=[];
-  if(!nm)errs.push('Το όνομα δεν μπορεί να είναι κενό.');
-  if(isNaN(w)||w<20||w>200)errs.push('Βάρος: έγκυρη τιμή 20–200 kg.');
-  if(isNaN(ex)||ex<0)errs.push('Εμπειρία: πρέπει να είναι θετικός αριθμός.');
-  if(!tm)errs.push('Η ομάδα δεν μπορεί να είναι κενή.');
-  if(!sp)errs.push('Επιλέξτε άθλημα.');
-  if(errs.length){document.getElementById('edit-alert').innerHTML=`<div class="alert alert-error">${errs.join('<br>')}</div>`;return;}
+async function saveEdit() {
+    const a = db.athletes.find(x => x.id === editingId);
+    if (!a) return;
 
-  if(DB_MODE){
-    const res = await apiPut('athletes',{id:editingId,name:nm,team:tm,weight:w,sport:sp,exp:ex});
-    if(!res.ok){document.getElementById('edit-alert').innerHTML=`<div class="alert alert-error">Σφάλμα: ${res.error}</div>`;return;}
-  }
-  a.weight=w; a.sport=sp; a.exp=ex; a.team=tm; a.name=nm;
-  closeEditModal();
-  renderAthletes();
+    const updated = {
+        weight: parseFloat(document.getElementById('edit-weight').value),
+        sport: document.getElementById('edit-sport').value,
+        exp: parseInt(document.getElementById('edit-exp').value),
+        team: document.getElementById('edit-team').value.trim(),
+        name: document.getElementById('edit-name').value.trim()
+    };
+
+    const { error } = await _supabase.from('athletes').update(updated).eq('id', editingId);
+
+    if (error) {
+        document.getElementById('edit-alert').innerHTML = `<div class="alert alert-error">Σφάλμα: ${error.message}</div>`;
+    } else {
+        Object.assign(a, updated);
+        closeEditModal();
+        renderAthletes();
+    }
 }
 
 // ── Matchmaking — Αλγόριθμος με Fallback ─────────────────────────
@@ -484,6 +481,7 @@ const PAIRING_STEPS=[
 ];
 
 function isAdult(a){ return a.year <= ADULT_YEAR_CUTOFF; }
+function sameTeam(t1, t2) { return (t1 || '').trim().toUpperCase() === (t2 || '').trim().toUpperCase(); }
 
 function scorePair(a,b){
   // Για ενήλικες: ηλικία έχει μικρή βαρύτητα — βάρος και αγώνες κυριαρχούν
@@ -493,36 +491,33 @@ function scorePair(a,b){
   return Math.max(0,Math.round(100-agePen-wtPen-expPen));
 }
 
-function buildPairs(avail, step){
-  const {ageDiff,weightDiff,expDiff}=step;
-  const sorted=[...avail].sort((a,b)=>b.year-a.year);
-  const pairs=[];
-  for(let i=0;i<sorted.length;i++)for(let j=i+1;j<sorted.length;j++){
-    const a=sorted[i],b=sorted[j];
-    const key=[a.id,b.id].sort().join('-');
-    if(rejectedPairs.has(key))continue;
-    if(a.gender!==b.gender)continue;
-    if(sameTeam(a.team,b.team))continue;
-    // Αν ΚΑΙ οι δύο είναι ενήλικες: δεν εφαρμόζεται το ageDiff limit
-    const bothAdults = isAdult(a) && isAdult(b);
-    if(!bothAdults && Math.abs(a.year-b.year)>ageDiff)continue;
-    if(Math.abs(a.weight-b.weight)>weightDiff)continue;
-    if(Math.abs(a.exp-b.exp)>expDiff)continue;
-    pairs.push({a,b,score:scorePair(a,b),key,step:step.label,badgeClass:step.badgeClass,badgeText:step.badgeText});
-  }
-  pairs.sort((x,y)=>y.score-x.score);
-  return pairs;
+function buildPairs(avail, step) {
+    const { ageDiff, weightDiff, expDiff } = step;
+    const sorted = [...avail].sort((a, b) => b.year - a.year);
+    const pairs = [];
+    for (let i = 0; i < sorted.length; i++) {
+        for (let j = i + 1; j < sorted.length; j++) {
+            const a = sorted[i], b = sorted[j];
+            const key = [a.id, b.id].sort().join('-');
+            if (rejectedPairs.has(key)) continue;
+            if (a.gender !== b.gender || sameTeam(a.team, b.team)) continue;
+            const bothAdults = isAdult(a) && isAdult(b);
+            if (!bothAdults && Math.abs(a.year - b.year) > ageDiff) continue;
+            if (Math.abs(a.weight - b.weight) > weightDiff || Math.abs(a.exp - b.exp) > expDiff) continue;
+            pairs.push({ a, b, score: scorePair(a, b), key, step: step.label, badgeClass: step.badgeClass, badgeText: step.badgeText });
+        }
+    }
+    return pairs.sort((x, y) => y.score - x.score);
 }
 function findNextPair(){rejectedPairs=new Set();currentPairCandidates=[];generatePair();}
-function generatePair(){
-  const avail=db.athletes.filter(a=>!a.paired);
-  if(avail.length<2){showAlert('mm-alert','Δεν υπάρχουν αρκετοί διαθέσιμοι αθλητές.','warning');document.getElementById('pair-display').innerHTML='';return;}
-  showAlert('mm-alert','','');
-  let allPairs=[];
-  for(const step of PAIRING_STEPS){const p=buildPairs(avail,step);if(p.length){allPairs=p;break;}}
-  currentPairCandidates=allPairs;
-  if(!allPairs.length){showAlert('mm-alert','Δεν βρέθηκε κατάλληλο ζευγάρι ούτε μετά από χαλάρωση κριτηρίων.','warning');document.getElementById('pair-display').innerHTML='';return;}
-  const p=allPairs[0];renderPairDisplay(p.a,p.b,p.score,p.key,p.badgeClass,p.badgeText);
+function generatePair() {
+    const avail = db.athletes.filter(a => !a.paired);
+    if (avail.length < 2) { showAlert('mm-alert', 'Δεν υπάρχουν διαθέσιμοι αθλητές.', 'warning'); return; }
+    let allPairs = [];
+    for (const step of PAIRING_STEPS) { allPairs = buildPairs(avail, step); if (allPairs.length) break; }
+    currentPairCandidates = allPairs;
+    if (!allPairs.length) { showAlert('mm-alert', 'Δεν βρέθηκε κατάλληλο ζευγάρι.', 'warning'); return; }
+    renderPairDisplay(allPairs[0].a, allPairs[0].b, allPairs[0].score, allPairs[0].key, allPairs[0].badgeClass, allPairs[0].badgeText);
 }
 function renderPairDisplay(a,b,sc,key,badgeClass,badgeText){
   const wd=Math.abs(a.weight-b.weight).toFixed(1),ad=Math.abs(a.year-b.year),ed=Math.abs(a.exp-b.exp);
@@ -570,36 +565,33 @@ function renderPairDisplay(a,b,sc,key,badgeClass,badgeText){
     </div>
   </div>`;
 }
-async function acceptPair(aid,bid){
-  const a=db.athletes.find(x=>x.id===aid),b=db.athletes.find(x=>x.id===bid);
-  if(!a||!b)return;
-  const dateStr = new Date().toLocaleDateString('el-GR');
-  if(DB_MODE){
-    const res = await apiPost('matches',{athlete1_id:a.id,athlete2_id:b.id,date:dateStr});
-    if(!res.ok){showAlert('mm-alert','Σφάλμα αποθήκευσης αγώνα: '+res.error,'error');return;}
-    a.paired=true;b.paired=true;
-    db.matches.push({id:res.data.id,athlete1:a,athlete2:b,date:dateStr});
-  } else {
-    a.paired=true;b.paired=true;
-    db.matches.push({id:db.matchId++,athlete1:a,athlete2:b,date:dateStr});
-  }
-  document.getElementById('pair-display').innerHTML='';
-  showAlert('mm-alert',`Αγώνας <strong>${a.name}</strong> εναντίον <strong>${b.name}</strong> αποθηκεύτηκε!${DB_MODE?' (MySQL)':''}`,'success');
+async function acceptPair(aid, bid) {
+    const a = db.athletes.find(x => x.id === aid), b = db.athletes.find(x => x.id === bid);
+    const dateStr = new Date().toLocaleDateString('el-GR');
+
+    const { data, error } = await _supabase.from('matches').insert([{ athlete1_id: aid, athlete2_id: bid, date: dateStr }]).select();
+    if (error) { showAlert('mm-alert', 'Σφάλμα: ' + error.message, 'error'); return; }
+
+    await _supabase.from('athletes').update({ paired: true }).in('id', [aid, bid]);
+    
+    a.paired = true; b.paired = true;
+    db.matches.push({ id: data[0].id, athlete1: a, athlete2: b, date: dateStr });
+    
+    document.getElementById('pair-display').innerHTML = '';
+    showAlert('mm-alert', `Αγώνας αποθηκεύτηκε!`, 'success');
+    renderMatches();
 }
-function rejectPair(key){
-  rejectedPairs.add(key);
-  const rem=currentPairCandidates.filter(p=>!rejectedPairs.has(p.key));
-  if(!rem.length){
-    const avail=db.athletes.filter(a=>!a.paired);
-    let found=false;
-    for(const step of PAIRING_STEPS){
-      const p=buildPairs(avail,step).filter(x=>!rejectedPairs.has(x.key));
-      if(p.length){currentPairCandidates=p;renderPairDisplay(p[0].a,p[0].b,p[0].score,p[0].key,p[0].badgeClass,p[0].badgeText);found=true;break;}
-    }
-    if(!found){showAlert('mm-alert','Δεν υπάρχουν άλλες προτάσεις.','warning');document.getElementById('pair-display').innerHTML='';}
-    return;
-  }
-  const p=rem[0];renderPairDisplay(p.a,p.b,p.score,p.key,p.badgeClass,p.badgeText);
+async function deleteAthlete(id) {
+    if (!confirm('Διαγραφή;')) return;
+    const { error } = await _supabase.from('athletes').delete().eq('id', id);
+    if (!error) { db.athletes = db.athletes.filter(a => a.id !== id); renderAthletes(); }
+}
+
+async function resetAll() {
+    if (!confirm('ΔΙΑΓΡΑΦΗ ΟΛΩΝ;')) return;
+    await _supabase.from('matches').delete().neq('id', 0);
+    await _supabase.from('athletes').delete().neq('id', 0);
+    location.reload();
 }
 
 // ── Render ────────────────────────────────────────────────────────
