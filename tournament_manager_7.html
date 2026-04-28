@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tournament Manager — Πολεμικές Τέχνες</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C0392B;--red-dark:#922B21;--red-light:#FADBD8;
+  --gold:#D4AC0D;--gold-light:#FEF9E7;
+  --dark:#1a1a2e;--darker:#16213e;
+  --surface:#ffffff;--surface2:#f4f4f4;
+  --border:#e0e0e0;--border2:#cccccc;
+  --text:#1a1a1a;--text2:#666666;
+  --green:#1a7a4a;--green-light:#D5F5E3;
+}
+body{font-family:'Barlow',sans-serif;font-size:15px;color:var(--text);background:#eef0f3;min-height:100vh;padding:24px}
+.app{max-width:1150px;margin:0 auto;border-radius:14px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.13)}
+.header{background:var(--dark);color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;color:#fff}
+.logo span{color:var(--gold)}
+.subtitle{font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.tabs{display:flex;background:var(--darker);padding:0 28px;flex-wrap:wrap}
+.tab{padding:13px 20px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px;user-select:none}
+.tab.active{color:#fff;border-bottom-color:var(--gold)}
+.tab:hover:not(.active){color:rgba(255,255,255,0.8)}
+.content{padding:28px;background:var(--surface2)}
+.panel{display:none}.panel.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.form-group{display:flex;flex-direction:column;gap:7px}
+.form-group.full{grid-column:1/-1}
+label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase}
+input,select{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:10px 13px;font-size:14px;font-family:'Barlow',sans-serif;color:var(--text);transition:border-color .2s;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(192,57,43,0.1)}
+.btn{padding:10px 22px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .15s;letter-spacing:.5px;white-space:nowrap}
+.btn-primary{background:var(--red);color:#fff;border-color:var(--red-dark)}.btn-primary:hover{background:var(--red-dark)}
+.btn-secondary{background:var(--surface);color:var(--text);border-color:var(--border2)}.btn-secondary:hover{background:var(--surface2)}
+.btn-success{background:var(--green);color:#fff;border-color:#145e38}.btn-success:hover{background:#145e38}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red-dark)}.btn-danger:hover{background:var(--red-dark)}
+.btn-gold{background:var(--gold);color:#000;border-color:#b7950b;font-size:16px;padding:13px 32px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-weight:400}.btn-gold:hover{background:#b7950b}
+.btn-sm{font-size:12px;padding:7px 14px}
+.athletes-table,.matches-table{width:100%;border-collapse:collapse;font-size:13px}
+.athletes-table th,.matches-table th{background:var(--dark);color:rgba(255,255,255,0.85);padding:10px 13px;text-align:left;font-weight:500;font-size:11px;letter-spacing:.8px;text-transform:uppercase}
+.athletes-table td,.matches-table td{padding:10px 13px;border-bottom:1px solid var(--border);color:var(--text)}
+.athletes-table tr:hover td{background:#ececec}
+.sport-badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.5px}
+.badge-BOX{background:#FADBD8;color:#922B21}.badge-KIK{background:#D5F5E3;color:#1E8449}.badge-Kickboxing{background:#D5F5E3;color:#1E8449}.badge-MMA{background:#EAD7F7;color:#6C3483}
+.gender-badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px}
+.gender-M{background:#D6EAF8;color:#1A5276}.gender-F{background:#FDEDEC;color:#922B21}
+.match-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:26px;margin-bottom:20px}
+.match-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:center;margin:20px 0}
+.athlete-card{background:var(--surface2);border-radius:10px;padding:18px;text-align:center}
+.athlete-card .name{font-weight:700;font-size:16px;margin-bottom:10px}
+.athlete-card .detail{font-size:13px;color:var(--text2);margin:3px 0}
+.athlete-card .detail span{font-weight:600;color:var(--text)}
+.vs-circle{width:50px;height:50px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;margin:0 auto}
+.match-actions{display:flex;gap:14px;justify-content:center}
+.alert{padding:13px 17px;border-radius:8px;font-size:14px;margin-bottom:18px}
+.alert-success{background:var(--green-light);color:#1E8449;border:1px solid #A9DFBF}
+.alert-warning{background:var(--gold-light);color:#7D6608;border:1px solid #F9E79F}
+.alert-error{background:var(--red-light);color:var(--red-dark);border:1px solid #F1948A}
+.alert-info{background:#EBF5FB;color:#1A5276;border:1px solid #AED6F1}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center}
+.stat-card .num{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--red)}
+.stat-card .lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--text)}
+.compat-bar-wrap{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.compat-row{display:flex;justify-content:space-between;align-items:center;margin:7px 0;font-size:13px}
+.compat-label{color:var(--text2);min-width:220px}
+.compat-val{font-weight:600;min-width:36px;text-align:right}
+.bar-wrap{height:7px;background:var(--surface2);border-radius:4px;flex:1;margin:0 14px}
+.bar-fill{height:100%;border-radius:4px;background:var(--gold)}
+.empty-state{text-align:center;padding:48px;color:var(--text2)}
+.empty-state .icon{font-size:44px;margin-bottom:14px}
+.filter-row{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.filter-row select,.filter-row input{font-size:13px;padding:8px 11px;width:auto}
+.del-btn{background:none;border:none;cursor:pointer;color:#bbb;font-size:16px;padding:2px 6px;border-radius:4px;transition:color .15s}
+.del-btn:hover{color:var(--red)}
+
+/* Import panel */
+.import-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:24px;margin-bottom:20px}
+.import-card-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:4px}
+.import-card-sub{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.7}
+.import-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.import-group{display:flex;flex-direction:column;gap:7px;flex:1;min-width:200px}
+.file-drop{border:2px dashed var(--border2);border-radius:8px;padding:16px 20px;background:var(--surface2);cursor:pointer;transition:all .2s;text-align:center;font-size:13px;color:var(--text2);position:relative;min-height:52px;display:flex;align-items:center;justify-content:center}
+.file-drop:hover,.file-drop.has-file{border-color:var(--green);color:var(--green);background:#f0faf4}
+.file-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.preview-box{margin-top:14px}
+.tip-card{background:#fffbea;border:1px solid #f0d060;border-radius:12px;padding:22px;margin-top:4px}
+.tip-card-title{font-weight:700;font-size:14px;margin-bottom:10px}
+.tip-card-body{font-size:13px;color:var(--text2);line-height:1.9}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;padding:28px;max-width:480px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:8px}
+.modal-sub{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.edit-group{display:flex;flex-direction:column;gap:6px}
+.edit-group.full{grid-column:1/-1}
+.edit-group label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase}
+.edit-group input,.edit-group select{font-size:14px}
+.edit-btn{background:none;border:1px solid var(--border2);cursor:pointer;color:var(--text2);font-size:12px;padding:3px 9px;border-radius:5px;transition:all .15s;font-family:'Barlow',sans-serif;font-weight:600}
+.edit-btn:hover{background:#EBF5FB;color:#1A5276;border-color:#AED6F1}
+.fallback-badge{display:inline-block;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:8px;vertical-align:middle}
+.fb-ideal{background:#D5F5E3;color:#1E8449}
+.fb-1{background:#FEF9E7;color:#7D6608}
+.fb-2{background:#FADBD8;color:#922B21}</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="logo">TOURNAMENT <span>MANAGER</span></div>
+      <div class="subtitle">Σύστημα Διαχείρισης Τουρνουά Πολεμικών Τεχνών</div>
+    </div>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.25)" onclick="openResetModal()">↺ Νέο Τουρνουά</button>
+  </div>
+  <div id="db-status-bar" style="display:none;background:#145e38;color:#fff;font-size:12px;padding:6px 28px;letter-spacing:.5px">
+    ✓ Συνδεδεμένο με MySQL — τα δεδομένα αποθηκεύονται αυτόματα
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('register')">Εγγραφή Αθλητή</div>
+    <div class="tab" onclick="switchTab('athletes')">Αθλητές</div>
+    <div class="tab" onclick="switchTab('matchmaking')">Ζευγαροποίηση</div>
+    <div class="tab" onclick="switchTab('matches')">Αγώνες</div>
+    <div class="tab" onclick="switchTab('unpaired')">⚠ Εκκρεμότητες</div>
+    <div class="tab" onclick="switchTab('import')">📥 Εισαγωγή Δεδομένων</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ΕΓΓΡΑΦΗ -->
+    <div id="tab-register" class="panel active">
+      <div class="section-header"><div class="section-title">Εγγραφή Νέου Αθλητή</div></div>
+      <div id="reg-alert"></div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>ΟΝΟΜΑΤΕΠΩΝΥΜΟ</label>
+          <input type="text" id="f-name" placeholder="π.χ. Γιώργος Παπαδόπουλος">
+        </div>
+        <div class="form-group">
+          <label>ΟΜΑΔΑ</label>
+          <input type="text" id="f-team" placeholder="π.χ. ΑΚ Αθήνας">
+        </div>
+        <div class="form-group">
+          <label>ΦΥΛΟ</label>
+          <select id="f-gender">
+            <option value="">— Επιλέξτε —</option>
+            <option value="Α">Α — Άνδρες</option>
+            <option value="Γ">Γ — Γυναίκες</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ΚΙΛΑ</label>
+          <input type="number" id="f-weight" placeholder="π.χ. 70" min="20" max="200" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>ΕΤΟΣ ΓΕΝΝΗΣΕΩΣ</label>
+          <input type="number" id="f-year" placeholder="π.χ. 2005" min="1950" max="2024">
+        </div>
+        <div class="form-group">
+          <label>ΑΓΩΝΕΣ (αριθμός αγώνων)</label>
+          <input type="number" id="f-exp" placeholder="π.χ. 10" min="0">
+        </div>
+        <div class="form-group">
+          <label>ΑΘΛΗΜΑ</label>
+          <select id="f-sport">
+            <option value="">— Επιλέξτε —</option>
+            <option value="BOX">BOX</option>
+            <option value="Kickboxing">Kickboxing</option>
+            <option value="MMA">MMA</option>
+          </select>
+        </div>
+        <div class="form-group" style="align-self:end">
+          <button class="btn btn-primary" onclick="registerAthlete()">Καταχώρηση Αθλητή</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ΑΘΛΗΤΕΣ -->
+    <div id="tab-athletes" class="panel">
+      <div class="section-header">
+        <div class="section-title">Λίστα Αθλητών</div>
+        <button class="btn btn-secondary btn-sm" onclick="exportAthletes()">⬇ Εξαγωγή CSV Αθλητών</button>
+      </div>
+      <div class="filter-row">
+        <select id="fil-sport" onchange="renderAthletes()">
+          <option value="">Όλα τα Αθλήματα</option>
+          <option value="BOX">BOX</option><option value="Kickboxing">Kickboxing</option><option value="MMA">MMA</option>
+        </select>
+        <select id="fil-gender" onchange="renderAthletes()">
+          <option value="">Όλα τα Φύλα</option>
+          <option value="Α">Α — Άνδρες</option><option value="Γ">Γ — Γυναίκες</option>
+        </select>
+        <input type="text" id="fil-search" placeholder="Αναζήτηση ονόματος ή ομάδας..." oninput="renderAthletes()" style="flex:1;min-width:200px">
+      </div>
+      <div id="athletes-container"></div>
+    </div>
+
+    <!-- ΖΕΥΓΑΡΟΠΟΙΗΣΗ -->
+    <div id="tab-matchmaking" class="panel">
+      <div class="section-header"><div class="section-title">Ζευγαροποίηση Αθλητών</div></div>
+      <div id="mm-alert"></div>
+      <div style="text-align:center;margin-bottom:26px">
+        <button class="btn btn-gold" onclick="findNextPair()">ΔΗΜΙΟΥΡΓΙΑ ΖΕΥΓΑΡΙΟΥ</button>
+      </div>
+      <div id="pair-display"></div>
+    </div>
+
+    <!-- ΑΓΩΝΕΣ -->
+    <div id="tab-matches" class="panel">
+      <div class="section-header">
+        <div class="section-title">Επιβεβαιωμένοι Αγώνες</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-success btn-sm" onclick="exportMatchesXLS()">⬇ Εξαγωγή Excel (.xls)</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportMatches()">⬇ Εξαγωγή CSV Αγώνων</button>
+        </div>
+      </div>
+      <div class="stats-grid" id="match-stats"></div>
+      <div id="matches-container"></div>
+    </div>
+
+    <!-- ΕΚΚΡΕΜΟΤΗΤΕΣ -->
+    <div id="tab-unpaired" class="panel">
+      <div class="section-header">
+        <div class="section-title">Εκκρεμότητες / Διαθέσιμοι Αθλητές</div>
+        <span id="unpaired-count" style="font-size:13px;color:var(--text2)"></span>
+      </div>
+      <div id="unpaired-alert"></div>
+      <div id="unpaired-container"></div>
+    </div>
+
+    <!-- ΕΙΣΑΓΩΓΗ -->
+    <div id="tab-import" class="panel">
+      <div class="section-header"><div class="section-title">Εισαγωγή Δεδομένων</div></div>
+      <div id="import-alert"></div>
+
+      <div class="import-card">
+        <div class="import-card-title">📋 Βήμα 1 — Εισαγωγή Αθλητών</div>
+        <div class="import-card-sub">
+          Φόρτωσε το αρχείο <strong>αθλητες.csv</strong> που εξήγαγες προηγουμένως.
+          Αθλητές που υπάρχουν ήδη (ίδιο όνομα + ομάδα) δεν θα διπλοκαταχωρηθούν.
+        </div>
+        <div class="import-row">
+          <div class="import-group">
+            <label>Αρχείο CSV Αθλητών</label>
+            <div class="file-drop" id="drop-athletes">
+              <input type="file" accept=".csv" onchange="handleAthleteFile(this)">
+              <span id="lbl-athletes">Κλικ ή σύρε το αρχείο εδώ</span>
+            </div>
+          </div>
+          <div style="align-self:flex-end">
+            <button class="btn btn-success" onclick="importAthletes()">⬆ Εισαγωγή Αθλητών</button>
+          </div>
+        </div>
+        <div id="preview-athletes" class="preview-box"></div>
+      </div>
+
+      <div class="import-card">
+        <div class="import-card-title">🥊 Βήμα 2 — Εισαγωγή Αγώνων</div>
+        <div class="import-card-sub">
+          Φόρτωσε το αρχείο <strong>αγωνες.xls</strong> ή <strong>αγωνες.csv</strong> που εξήγαγες.
+          Κάνε πρώτα την εισαγωγή αθλητών. Οι αθλητές που εμφανίζονται σε αγώνες θα σημανθούν αυτόματα ως ζευγαρωμένοι.
+        </div>
+        <div class="import-row">
+          <div class="import-group">
+            <label>Αρχείο Αγώνων (.xls ή .csv)</label>
+            <div class="file-drop" id="drop-matches">
+              <input type="file" accept=".csv,.xls,.xlsx" onchange="handleMatchFile(this)">
+              <span id="lbl-matches">Κλικ ή σύρε το αρχείο εδώ</span>
+            </div>
+          </div>
+          <div style="align-self:flex-end">
+            <button class="btn btn-success" onclick="importMatches()">⬆ Εισαγωγή Αγώνων</button>
+          </div>
+        </div>
+        <div id="preview-matches" class="preview-box"></div>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-card-title">💡 Πώς να αποθηκεύεις και να συνεχίζεις</div>
+        <div class="tip-card-body">
+          <strong>Πριν κλείσεις:</strong> Πήγαινε στην καρτέλα <em>Αθλητές</em> → Εξαγωγή CSV, και στην καρτέλα <em>Αγώνες</em> → Εξαγωγή Excel (.xls). Αποθήκευσέ τα σε φάκελο που θυμάσαι.<br>
+          <strong>Για να συνεχίσεις:</strong> Άνοιξε ξανά το HTML, πήγαινε εδώ, φόρτωσε πρώτα <em>αθλητες.csv</em> και μετά <em>αγωνες.xls</em> ή <em>αγωνες.csv</em>.<br>
+          <strong>Νέο τουρνουά:</strong> Χρησιμοποίησε το κουμπί <em>"↺ Νέο Τουρνουά"</em> πάνω δεξιά για να ξεκινήσεις από μηδέν.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Επεξεργασίας Αθλητή -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Επεξεργασία Αθλητή</div>
+    <div id="edit-athlete-name" style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:4px"></div>
+    <div class="edit-grid">
+      <div class="edit-group">
+        <label>ΚΙΛΑ</label>
+        <input type="number" id="edit-weight" min="20" max="200" step="0.5">
+      </div>
+      <div class="edit-group">
+        <label>ΑΘΛΗΜΑ</label>
+        <select id="edit-sport">
+          <option value="BOX">BOX</option>
+          <option value="Kickboxing">Kickboxing</option>
+          <option value="MMA">MMA</option>
+        </select>
+      </div>
+      <div class="edit-group">
+        <label>ΑΓΩΝΕΣ</label>
+        <input type="number" id="edit-exp" min="0">
+      </div>
+      <div class="edit-group">
+        <label>ΟΜΑΔΑ</label>
+        <input type="text" id="edit-team">
+      </div>
+      <div class="edit-group full">
+        <label>ΟΝΟΜΑΤΕΠΩΝΥΜΟ</label>
+        <input type="text" id="edit-name">
+      </div>
+    </div>
+    <div id="edit-alert" style="margin-top:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeEditModal()">Ακύρωση</button>
+      <button class="btn btn-success" onclick="saveEdit()">Αποθήκευση</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Επαναφοράς -->
+<div class="modal-bg" id="reset-modal">
+  <div class="modal">
+    <div class="modal-title">Νέο Τουρνουά</div>
+    <div class="modal-sub">
+      Αυτή η ενέργεια θα διαγράψει <strong>όλους τους αθλητές και αγώνες</strong> από τη μνήμη.<br><br>
+      Βεβαιώσου ότι έχεις εξάγει τα CSV αρχεία σου πριν συνεχίσεις!
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeResetModal()">Ακύρωση</button>
+      <button class="btn btn-danger" onclick="resetAll()">Διαγραφή και Έναρξη</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  TOURNAMENT MANAGER — JavaScript
+//  Υποστηρίζει δύο λειτουργίες:
+//    • DB_MODE = true  → MySQL μέσω api.php (XAMPP)
+//    • DB_MODE = false → Τοπική μνήμη (standalone HTML)
+// ════════════════════════════════════════════════════════════════
+
+const API = 'api.php';   // Σχετική διεύθυνση του PHP backend
+let DB_MODE = false;     // Ενεργοποιείται αυτόματα αν βρεθεί το api.php
+
+let db = { athletes:[], matches:[], nextId:1, matchId:1 };
+let currentPairCandidates=[], rejectedPairs=new Set();
+let pendingAthletes=[], pendingMatches=[];
+
+// ── Εκκίνηση ─────────────────────────────────────────────────────
+async function init(){
+  // Δοκιμή σύνδεσης με το backend
+  try {
+    const r = await fetch(API+'?action=athletes', {method:'GET'});
+    if(r.ok){
+      DB_MODE = true;
+      document.getElementById('db-status-bar').style.display='block';
+      await loadFromDB();
+    }
+  } catch(e){
+    // Δεν βρέθηκε api.php — λειτουργία standalone
+    DB_MODE = false;
+  }
+}
+
+async function loadFromDB(){
+  if(!DB_MODE) return;
+  try {
+    // Φόρτωση αθλητών
+    const ar = await fetch(API+'?action=athletes').then(r=>r.json());
+    if(ar.ok){
+      db.athletes = ar.data;
+      db.nextId = ar.data.length ? Math.max(...ar.data.map(a=>a.id))+1 : 1;
+    }
+    // Φόρτωση αγώνων
+    const mr = await fetch(API+'?action=matches').then(r=>r.json());
+    if(mr.ok){
+      db.matches = mr.data;
+      db.matchId = mr.data.length ? Math.max(...mr.data.map(m=>m.id))+1 : 1;
+    }
+  } catch(e){ console.error('loadFromDB error:',e); }
+}
+
+// ── API helpers ───────────────────────────────────────────────────
+async function apiPost(action, body){
+  const r = await fetch(API+'?action='+action, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+async function apiPut(action, body){
+  const r = await fetch(API+'?action='+action, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+async function apiDelete(action, body){
+  const r = await fetch(API+'?action='+action, {
+    method:'DELETE', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function switchTab(t){
+  ['register','athletes','matchmaking','matches','unpaired','import'].forEach((id,i)=>{
+    document.getElementById('tab-'+id).classList.toggle('active',id===t);
+    document.querySelectorAll('.tab')[i].classList.toggle('active',id===t);
+  });
+  if(t==='athletes')renderAthletes();
+  if(t==='matches')renderMatches();
+  if(t==='unpaired')renderUnpaired();
+}
+
+// ── Alerts ────────────────────────────────────────────────────────
+function showAlert(id,msg,type='info'){
+  const el=document.getElementById(id);
+  if(!msg){el.innerHTML='';return;}
+  el.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+  if(type==='success')setTimeout(()=>el.innerHTML='',5000);
+}
+
+// ── Register ──────────────────────────────────────────────────────
+async function registerAthlete(){
+  const name=document.getElementById('f-name').value.trim();
+  const team=document.getElementById('f-team').value.trim();
+  const gender=document.getElementById('f-gender').value;
+  const weight=parseFloat(document.getElementById('f-weight').value);
+  const year=parseInt(document.getElementById('f-year').value);
+  const exp=parseInt(document.getElementById('f-exp').value);
+  const sport=document.getElementById('f-sport').value;
+  if(!name||!team||!gender||!weight||!year||isNaN(exp)||!sport){showAlert('reg-alert','Παρακαλώ συμπληρώστε όλα τα πεδία.','error');return;}
+  if(year<1950||year>2024){showAlert('reg-alert','Μη έγκυρο έτος γέννησης (1950–2024).','error');return;}
+  if(weight<20||weight>200){showAlert('reg-alert','Μη έγκυρο βάρος (20–200 kg).','error');return;}
+
+  const athlete = {name,team,gender,weight,year,exp,sport,paired:false};
+
+  if(DB_MODE){
+    const res = await apiPost('athletes', athlete);
+    if(!res.ok){showAlert('reg-alert','Σφάλμα αποθήκευσης: '+res.error,'error');return;}
+    athlete.id = res.data.id;
+    db.athletes.push(athlete);
+  } else {
+    athlete.id = db.nextId++;
+    db.athletes.push(athlete);
+  }
+
+  showAlert('reg-alert',`Ο αθλητής <strong>${name}</strong> καταχωρήθηκε επιτυχώς!${DB_MODE?' (αποθηκεύτηκε στη βάση)':''}`,'success');
+  ['f-name','f-team','f-weight','f-year','f-exp'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-gender').value='';
+  document.getElementById('f-sport').value='';
+}
+
+async function deleteAthlete(id){
+  if(!confirm('Διαγραφή αθλητή;'))return;
+  if(DB_MODE){
+    const res = await apiDelete('athletes',{id});
+    if(!res.ok){alert('Σφάλμα διαγραφής: '+res.error);return;}
+  }
+  db.athletes=db.athletes.filter(a=>a.id!==id);
+  renderAthletes();
+}
+
+// ── Team normalization ────────────────────────────────────────────
+function teamKey(t){return(t||'').trim().toUpperCase();}
+function sameTeam(t1,t2){return teamKey(t1)===teamKey(t2);}
+
+// ── Edit Athlete ──────────────────────────────────────────────────
+let editingId=null;
+function openEditModal(id){
+  const a=db.athletes.find(x=>x.id===id);if(!a)return;
+  editingId=id;
+  document.getElementById('edit-athlete-name').textContent=a.name+' · '+a.team;
+  document.getElementById('edit-weight').value=a.weight;
+  document.getElementById('edit-sport').value=a.sport;
+  document.getElementById('edit-exp').value=a.exp;
+  document.getElementById('edit-team').value=a.team;
+  document.getElementById('edit-name').value=a.name;
+  document.getElementById('edit-alert').innerHTML='';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEditModal(){document.getElementById('edit-modal').classList.remove('open');editingId=null;}
+async function saveEdit(){
+  const a=db.athletes.find(x=>x.id===editingId);if(!a)return;
+  const w=parseFloat(document.getElementById('edit-weight').value);
+  const sp=document.getElementById('edit-sport').value;
+  const ex=parseInt(document.getElementById('edit-exp').value);
+  const tm=document.getElementById('edit-team').value.trim();
+  const nm=document.getElementById('edit-name').value.trim();
+  const errs=[];
+  if(!nm)errs.push('Το όνομα δεν μπορεί να είναι κενό.');
+  if(isNaN(w)||w<20||w>200)errs.push('Βάρος: έγκυρη τιμή 20–200 kg.');
+  if(isNaN(ex)||ex<0)errs.push('Εμπειρία: πρέπει να είναι θετικός αριθμός.');
+  if(!tm)errs.push('Η ομάδα δεν μπορεί να είναι κενή.');
+  if(!sp)errs.push('Επιλέξτε άθλημα.');
+  if(errs.length){document.getElementById('edit-alert').innerHTML=`<div class="alert alert-error">${errs.join('<br>')}</div>`;return;}
+
+  if(DB_MODE){
+    const res = await apiPut('athletes',{id:editingId,name:nm,team:tm,weight:w,sport:sp,exp:ex});
+    if(!res.ok){document.getElementById('edit-alert').innerHTML=`<div class="alert alert-error">Σφάλμα: ${res.error}</div>`;return;}
+  }
+  a.weight=w; a.sport=sp; a.exp=ex; a.team=tm; a.name=nm;
+  closeEditModal();
+  renderAthletes();
+}
+
+// ── Matchmaking — Αλγόριθμος με Fallback ─────────────────────────
+// Αθλητές γεννημένοι <= 2008 θεωρούνται ενήλικες (18+) — ένα ενιαίο pool
+const ADULT_YEAR_CUTOFF = 2008;
+
+const PAIRING_STEPS=[
+  {ageDiff:1, weightDiff:5,  expDiff:3,  label:'ideal', badgeClass:'fb-ideal', badgeText:'Ιδανικό'},
+  {ageDiff:1, weightDiff:7,  expDiff:5,  label:'step1',  badgeClass:'fb-1',     badgeText:'Χαλάρωση Β1'},
+  {ageDiff:2, weightDiff:7,  expDiff:5,  label:'step2',  badgeClass:'fb-2',     badgeText:'Χαλάρωση Β2'},
+];
+
+function isAdult(a){ return a.year <= ADULT_YEAR_CUTOFF; }
+
+function scorePair(a,b){
+  // Για ενήλικες: ηλικία έχει μικρή βαρύτητα — βάρος και αγώνες κυριαρχούν
+  const agePen = (isAdult(a)&&isAdult(b)) ? Math.abs(a.year-b.year)*1 : Math.abs(a.year-b.year)*8;
+  const wtPen  = Math.abs(a.weight-b.weight)*3;
+  const expPen = Math.abs(a.exp-b.exp)*1.5;
+  return Math.max(0,Math.round(100-agePen-wtPen-expPen));
+}
+
+function buildPairs(avail, step){
+  const {ageDiff,weightDiff,expDiff}=step;
+  const sorted=[...avail].sort((a,b)=>b.year-a.year);
+  const pairs=[];
+  for(let i=0;i<sorted.length;i++)for(let j=i+1;j<sorted.length;j++){
+    const a=sorted[i],b=sorted[j];
+    const key=[a.id,b.id].sort().join('-');
+    if(rejectedPairs.has(key))continue;
+    if(a.gender!==b.gender)continue;
+    if(sameTeam(a.team,b.team))continue;
+    // Αν ΚΑΙ οι δύο είναι ενήλικες: δεν εφαρμόζεται το ageDiff limit
+    const bothAdults = isAdult(a) && isAdult(b);
+    if(!bothAdults && Math.abs(a.year-b.year)>ageDiff)continue;
+    if(Math.abs(a.weight-b.weight)>weightDiff)continue;
+    if(Math.abs(a.exp-b.exp)>expDiff)continue;
+    pairs.push({a,b,score:scorePair(a,b),key,step:step.label,badgeClass:step.badgeClass,badgeText:step.badgeText});
+  }
+  pairs.sort((x,y)=>y.score-x.score);
+  return pairs;
+}
+function findNextPair(){rejectedPairs=new Set();currentPairCandidates=[];generatePair();}
+function generatePair(){
+  const avail=db.athletes.filter(a=>!a.paired);
+  if(avail.length<2){showAlert('mm-alert','Δεν υπάρχουν αρκετοί διαθέσιμοι αθλητές.','warning');document.getElementById('pair-display').innerHTML='';return;}
+  showAlert('mm-alert','','');
+  let allPairs=[];
+  for(const step of PAIRING_STEPS){const p=buildPairs(avail,step);if(p.length){allPairs=p;break;}}
+  currentPairCandidates=allPairs;
+  if(!allPairs.length){showAlert('mm-alert','Δεν βρέθηκε κατάλληλο ζευγάρι ούτε μετά από χαλάρωση κριτηρίων.','warning');document.getElementById('pair-display').innerHTML='';return;}
+  const p=allPairs[0];renderPairDisplay(p.a,p.b,p.score,p.key,p.badgeClass,p.badgeText);
+}
+function renderPairDisplay(a,b,sc,key,badgeClass,badgeText){
+  const wd=Math.abs(a.weight-b.weight).toFixed(1),ad=Math.abs(a.year-b.year),ed=Math.abs(a.exp-b.exp);
+  const wp=Math.round(Math.max(0,100-Math.abs(a.weight-b.weight)*8));
+  const ap=Math.round(Math.max(0,100-ad*30));
+  const ep=Math.round(Math.max(0,100-ed*10));
+  const bothAdult = isAdult(a)&&isAdult(b);
+  document.getElementById('pair-display').innerHTML=`
+  <div class="match-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px">
+        <span class="sport-badge badge-${a.sport.replace(/\s/g,'_')}">${a.sport}</span> ${a.gender}
+        ${bothAdult?'<span class="fallback-badge" style="background:#EBF5FB;color:#1A5276;margin-left:6px">18+ Ενήλικες</span>':''}
+        <span class="fallback-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)">Σκορ: ${sc}%</div>
+    </div>
+    <div class="match-vs">
+      <div class="athlete-card" style="border-top:4px solid #C0392B">
+        <div style="font-size:10px;font-weight:700;color:#C0392B;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">🔴 Κόκκινη Γωνία</div>
+        <div class="name">${a.name}</div>
+        <div class="detail">Ομάδα: <span>${a.team}</span></div>
+        <div class="detail">Έτος Γέννησης: <span>${a.year}${isAdult(a)?' (18+)':''}</span></div>
+        <div class="detail">Κιλά: <span>${a.weight} kg</span></div>
+        <div class="detail">Αγώνες: <span>${a.exp}</span></div>
+      </div>
+      <div><div class="vs-circle">VS</div></div>
+      <div class="athlete-card" style="border-top:4px solid #1A5276">
+        <div style="font-size:10px;font-weight:700;color:#1A5276;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">🔵 Μπλε Γωνία</div>
+        <div class="name">${b.name}</div>
+        <div class="detail">Ομάδα: <span>${b.team}</span></div>
+        <div class="detail">Έτος Γέννησης: <span>${b.year}${isAdult(b)?' (18+)':''}</span></div>
+        <div class="detail">Κιλά: <span>${b.weight} kg</span></div>
+        <div class="detail">Αγώνες: <span>${b.exp}</span></div>
+      </div>
+    </div>
+    <div class="compat-bar-wrap">
+      <div class="compat-row"><span class="compat-label">Βάρος (διαφορά ${wd} kg)</span><div class="bar-wrap"><div class="bar-fill" style="width:${wp}%"></div></div><span class="compat-val">${wp}%</span></div>
+      <div class="compat-row"><span class="compat-label">Ηλικία (${ad} χρόνια διαφορά${bothAdult?' — ενήλικες pool':''})</span><div class="bar-wrap"><div class="bar-fill" style="width:${ap}%"></div></div><span class="compat-val">${ap}%</span></div>
+      <div class="compat-row"><span class="compat-label">Αγώνες (${ed} διαφορά)</span><div class="bar-wrap"><div class="bar-fill" style="width:${ep}%"></div></div><span class="compat-val">${ep}%</span></div>
+    </div>
+    <div class="match-actions" style="margin-top:22px">
+      <button class="btn btn-success" onclick="acceptPair(${a.id},${b.id})">✓ ΔΗΜΙΟΥΡΓΙΑ</button>
+      <button class="btn btn-danger" onclick="rejectPair('${key}')">✗ ΑΠΟΡΡΙΨΗ</button>
+    </div>
+  </div>`;
+}
+async function acceptPair(aid,bid){
+  const a=db.athletes.find(x=>x.id===aid),b=db.athletes.find(x=>x.id===bid);
+  if(!a||!b)return;
+  const dateStr = new Date().toLocaleDateString('el-GR');
+  if(DB_MODE){
+    const res = await apiPost('matches',{athlete1_id:a.id,athlete2_id:b.id,date:dateStr});
+    if(!res.ok){showAlert('mm-alert','Σφάλμα αποθήκευσης αγώνα: '+res.error,'error');return;}
+    a.paired=true;b.paired=true;
+    db.matches.push({id:res.data.id,athlete1:a,athlete2:b,date:dateStr});
+  } else {
+    a.paired=true;b.paired=true;
+    db.matches.push({id:db.matchId++,athlete1:a,athlete2:b,date:dateStr});
+  }
+  document.getElementById('pair-display').innerHTML='';
+  showAlert('mm-alert',`Αγώνας <strong>${a.name}</strong> εναντίον <strong>${b.name}</strong> αποθηκεύτηκε!${DB_MODE?' (MySQL)':''}`,'success');
+}
+function rejectPair(key){
+  rejectedPairs.add(key);
+  const rem=currentPairCandidates.filter(p=>!rejectedPairs.has(p.key));
+  if(!rem.length){
+    const avail=db.athletes.filter(a=>!a.paired);
+    let found=false;
+    for(const step of PAIRING_STEPS){
+      const p=buildPairs(avail,step).filter(x=>!rejectedPairs.has(x.key));
+      if(p.length){currentPairCandidates=p;renderPairDisplay(p[0].a,p[0].b,p[0].score,p[0].key,p[0].badgeClass,p[0].badgeText);found=true;break;}
+    }
+    if(!found){showAlert('mm-alert','Δεν υπάρχουν άλλες προτάσεις.','warning');document.getElementById('pair-display').innerHTML='';}
+    return;
+  }
+  const p=rem[0];renderPairDisplay(p.a,p.b,p.score,p.key,p.badgeClass,p.badgeText);
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderAthletes(){
+  const sport=document.getElementById('fil-sport').value,gender=document.getElementById('fil-gender').value;
+  const search=document.getElementById('fil-search').value.toLowerCase();
+  const list=db.athletes.filter(a=>{
+    if(sport&&a.sport!==sport)return false;
+    if(gender&&a.gender!==gender)return false;
+    if(search&&!a.name.toLowerCase().includes(search)&&!a.team.toLowerCase().includes(search))return false;
+    return true;
+  });
+  const c=document.getElementById('athletes-container');
+  if(!list.length){c.innerHTML='<div class="empty-state"><div class="icon">🥋</div><p>Δεν βρέθηκαν αθλητές.</p></div>';return;}
+  c.innerHTML=`<table class="athletes-table"><thead><tr>
+    <th>#</th><th>Ονοματεπώνυμο</th><th>Ομάδα</th><th>Φύλο</th><th>Κιλά</th><th>Έτος</th><th>Αγώνες</th><th>Άθλημα</th><th>Κατάσταση</th><th></th>
+  </tr></thead><tbody>${list.map(a=>`<tr>
+    <td style="color:var(--text2)">${a.id}</td>
+    <td style="font-weight:600">${a.name}</td><td>${a.team}</td>
+    <td><span class="gender-badge ${a.gender==='Α'?'gender-M':'gender-F'}">${a.gender}</span></td>
+    <td>${a.weight} kg</td><td>${a.year}</td><td>${a.exp}</td>
+    <td><span class="sport-badge badge-${a.sport}">${a.sport}</span></td>
+    <td style="color:${a.paired?'#1E8449':'var(--text2)'};font-size:12px;font-weight:${a.paired?600:400}">${a.paired?'✓ Ζευγαρωμένος':'Διαθέσιμος'}</td>
+    <td style="display:flex;gap:5px;align-items:center">
+      <button class="edit-btn" onclick="openEditModal(${a.id})" title="Επεξεργασία">✏</button>
+      <button class="del-btn" onclick="deleteAthlete(${a.id})" title="Διαγραφή">✕</button>
+    </td>
+  </tr>`).join('')}</tbody></table>
+  <div style="margin-top:10px;font-size:12px;color:var(--text2)">Σύνολο: ${list.length} αθλητές</div>`;
+}
+function renderMatches(){
+  const total=db.matches.length;
+  const sp={BOX:0,Kickboxing:0,MMA:0};
+  db.matches.forEach(m=>{ if(sp[m.athlete1.sport]!==undefined)sp[m.athlete1.sport]++; else sp[m.athlete1.sport]=1; });
+  document.getElementById('match-stats').innerHTML=`
+    <div class="stat-card"><div class="num">${total}</div><div class="lbl">Συνολικοί Αγώνες</div></div>
+    <div class="stat-card"><div class="num">${sp.BOX||0}</div><div class="lbl">BOX</div></div>
+    <div class="stat-card"><div class="num">${sp.Kickboxing||0}</div><div class="lbl">Kickboxing</div></div>
+    <div class="stat-card"><div class="num">${sp.MMA||0}</div><div class="lbl">MMA</div></div>`;
+  const c=document.getElementById('matches-container');
+  if(!total){c.innerHTML='<div class="empty-state"><div class="icon">🏆</div><p>Δεν υπάρχουν επιβεβαιωμένοι αγώνες.</p></div>';return;}
+  c.innerHTML=`<table class="matches-table"><thead><tr>
+    <th>#</th>
+    <th style="color:#FADBD8">🔴 Κόκκινη Γωνία</th><th>Ομάδα</th><th>Έτος</th><th>Κιλά</th>
+    <th style="color:#AED6F1">🔵 Μπλε Γωνία</th><th>Ομάδα</th><th>Έτος</th><th>Κιλά</th>
+    <th>Άθλημα</th><th>Φύλο</th><th>Ημερομηνία</th>
+  </tr></thead><tbody>${db.matches.map(m=>`<tr>
+    <td style="color:var(--text2);font-weight:700">${m.id}</td>
+    <td style="font-weight:600;border-left:3px solid #C0392B">${m.athlete1.name}</td><td style="color:var(--text2)">${m.athlete1.team}</td>
+    <td>${m.athlete1.year}</td><td>${m.athlete1.weight} kg</td>
+    <td style="font-weight:600;border-left:3px solid #1A5276">${m.athlete2.name}</td><td style="color:var(--text2)">${m.athlete2.team}</td>
+    <td>${m.athlete2.year}</td><td>${m.athlete2.weight} kg</td>
+    <td><span class="sport-badge badge-${m.athlete1.sport.replace(/\s/g,'_')}">${m.athlete1.sport}</span></td>
+    <td>${m.athlete1.gender}</td>
+    <td style="color:var(--text2);font-size:12px">${m.date}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+// ── Render Unpaired ───────────────────────────────────────────────
+function renderUnpaired(){
+  const unpaired=db.athletes.filter(a=>!a.paired);
+  const total=unpaired.length;
+  document.getElementById('unpaired-count').textContent=
+    total ? `${total} αθλητές χωρίς ζευγάρι` : '';
+
+  const c=document.getElementById('unpaired-container');
+  if(!total){
+    c.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>Όλοι οι αθλητές έχουν ζευγαρωθεί!</p></div>';
+    return;
+  }
+
+  // Group by sport + gender
+  const groups={};
+  unpaired.forEach(a=>{
+    const key=`${a.sport}|${a.gender}`;
+    if(!groups[key])groups[key]={sport:a.sport,gender:a.gender,athletes:[]};
+    groups[key].athletes.push(a);
+  });
+
+  const parts=Object.values(groups).map(g=>{
+    const rows=g.athletes
+      .sort((a,b)=>a.year-b.year)
+      .map((a,i)=>`<tr style="background:${i%2===0?'var(--surface)':'var(--surface2)'}">
+        <td style="font-weight:600">${a.name}</td>
+        <td>${a.team}</td>
+        <td>${a.year}${isAdult(a)?'<span style="font-size:10px;color:#1A5276;margin-left:4px">18+</span>':''}</td>
+        <td>${a.weight} kg</td>
+        <td>${a.exp}</td>
+      </tr>`).join('');
+    return `
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span class="sport-badge badge-${g.sport.replace(/\s/g,'_')}">${g.sport}</span>
+          <span class="gender-badge ${g.gender==='Α'?'gender-M':'gender-F'}">${g.gender}</span>
+          <span style="font-size:13px;color:var(--text2)">${g.athletes.length} αθλητές χωρίς ζευγάρι</span>
+        </div>
+        <table class="athletes-table">
+          <thead><tr>
+            <th>Ονοματεπώνυμο</th><th>Ομάδα</th><th>Έτος</th><th>Κιλά</th><th>Αγώνες</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  c.innerHTML=`
+    <div class="alert alert-warning" style="margin-bottom:16px">
+      ⚠ <strong>${total} αθλητές</strong> δεν έχουν βρει ζευγάρι βάσει των κριτηρίων. Μπορείτε να τους ζευγαρώσετε χειροκίνητα ή να αναθεωρήσετε τα κριτήρια.
+    </div>
+    ${parts}`;
+}
+function exportAthletes(){
+  if(!db.athletes.length){alert('Δεν υπάρχουν αθλητές για εξαγωγή.');return;}
+  const rows=db.athletes.map(a=>`${a.id},"${a.name}","${a.team}","${a.gender}",${a.weight},${a.year},${a.exp},${a.sport},${a.paired?'Ζευγαρωμένος':'Διαθέσιμος'}`);
+  dlCSV(['ID,Ονοματεπώνυμο,Ομάδα,Φύλο,Κιλά,Έτος Γέννησης,Αγώνες,Άθλημα,Κατάσταση',...rows].join('\n'),'αθλητες.csv');
+}
+function exportMatches(){
+  if(!db.matches.length){alert('Δεν υπάρχουν αγώνες για εξαγωγή.');return;}
+  const rows=db.matches.map(m=>`${m.id},"${m.athlete1.name}","${m.athlete1.team}",${m.athlete1.year},${m.athlete1.weight},"${m.athlete2.name}","${m.athlete2.team}",${m.athlete2.year},${m.athlete2.weight},${m.athlete1.sport},"${m.athlete1.gender}","${m.date}"`);
+  dlCSV(['#,Αθλητής 1,Ομάδα 1,Έτος 1,Κιλά 1,Αθλητής 2,Ομάδα 2,Έτος 2,Κιλά 2,Άθλημα,Φύλο,Ημερομηνία',...rows].join('\n'),'αγωνες.csv');
+}
+function dlCSV(content,filename){
+  const blob=new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+
+// ── Export Excel (.xls) ───────────────────────────────────────────
+function exportMatchesXLS(){
+  if(!db.matches.length){alert('Δεν υπάρχουν αγώνες για εξαγωγή.');return;}
+  const today=new Date().toLocaleDateString('el-GR');
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const styles=`
+  <Styles>
+    <Style ss:ID="header_red">
+      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/>
+      <Interior ss:Color="#922B21" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="header_blue">
+      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/>
+      <Interior ss:Color="#1A5276" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="header">
+      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/>
+      <Interior ss:Color="#1a1a2e" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="title">
+      <Font ss:Bold="1" ss:Size="14" ss:Color="#1a1a2e"/>
+      <Alignment ss:Horizontal="Left"/>
+    </Style>
+    <Style ss:ID="subtitle">
+      <Font ss:Italic="1" ss:Size="10" ss:Color="#666666"/>
+    </Style>
+    <Style ss:ID="odd">
+      <Interior ss:Color="#F9F9F9" ss:Pattern="Solid"/>
+      <Font ss:Size="10"/>
+      <Alignment ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="even">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Font ss:Size="10"/>
+      <Alignment ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="odd_red">
+      <Interior ss:Color="#FDF3F3" ss:Pattern="Solid"/>
+      <Font ss:Size="10" ss:Bold="1"/>
+      <Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#C0392B"/></Borders>
+    </Style>
+    <Style ss:ID="even_red">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Font ss:Size="10" ss:Bold="1"/>
+      <Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#C0392B"/></Borders>
+    </Style>
+    <Style ss:ID="odd_blue">
+      <Interior ss:Color="#F3F8FD" ss:Pattern="Solid"/>
+      <Font ss:Size="10" ss:Bold="1"/>
+      <Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1A5276"/></Borders>
+    </Style>
+    <Style ss:ID="even_blue">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Font ss:Size="10" ss:Bold="1"/>
+      <Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1A5276"/></Borders>
+    </Style>
+    <Style ss:ID="num">
+      <Font ss:Bold="1" ss:Size="10" ss:Color="#666666"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="sport_cell">
+      <Font ss:Bold="1" ss:Size="10"/>
+      <Alignment ss:Horizontal="Center"/>
+    </Style>
+  </Styles>`;
+  const total=db.matches.length;
+  const byBOX=db.matches.filter(m=>m.athlete1.sport==='BOX').length;
+  const byKIK=db.matches.filter(m=>m.athlete1.sport==='Kickboxing').length;
+  const byMMA=db.matches.filter(m=>m.athlete1.sport==='MMA').length;
+  const headerRow=
+    `<Cell ss:StyleID="header"><Data ss:Type="String">#</Data></Cell>`+
+    `<Cell ss:StyleID="header_red"><Data ss:Type="String">Κόκκινη Γωνία</Data></Cell>`+
+    `<Cell ss:StyleID="header_red"><Data ss:Type="String">Ομάδα 1</Data></Cell>`+
+    `<Cell ss:StyleID="header_red"><Data ss:Type="String">Έτος 1</Data></Cell>`+
+    `<Cell ss:StyleID="header_red"><Data ss:Type="String">Κιλά 1</Data></Cell>`+
+    `<Cell ss:StyleID="header_blue"><Data ss:Type="String">Μπλε Γωνία</Data></Cell>`+
+    `<Cell ss:StyleID="header_blue"><Data ss:Type="String">Ομάδα 2</Data></Cell>`+
+    `<Cell ss:StyleID="header_blue"><Data ss:Type="String">Έτος 2</Data></Cell>`+
+    `<Cell ss:StyleID="header_blue"><Data ss:Type="String">Κιλά 2</Data></Cell>`+
+    `<Cell ss:StyleID="header"><Data ss:Type="String">Άθλημα</Data></Cell>`+
+    `<Cell ss:StyleID="header"><Data ss:Type="String">Φύλο</Data></Cell>`+
+    `<Cell ss:StyleID="header"><Data ss:Type="String">Ημερομηνία</Data></Cell>`;
+  const dataRows=db.matches.map((m,i)=>{
+    const st=i%2===0?'odd':'even';
+    return `<Row ss:Height="22">
+      <Cell ss:StyleID="num"><Data ss:Type="Number">${m.id}</Data></Cell>
+      <Cell ss:StyleID="${st}_red"><Data ss:Type="String">${esc(m.athlete1.name)}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(m.athlete1.team)}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${m.athlete1.year}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${m.athlete1.weight}</Data></Cell>
+      <Cell ss:StyleID="${st}_blue"><Data ss:Type="String">${esc(m.athlete2.name)}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(m.athlete2.team)}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${m.athlete2.year}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${m.athlete2.weight}</Data></Cell>
+      <Cell ss:StyleID="sport_cell"><Data ss:Type="String">${esc(m.athlete1.sport)}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(m.athlete1.gender)}</Data></Cell>
+      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(m.date)}</Data></Cell>
+    </Row>`;
+  }).join('');
+  const xml=`<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:x="urn:schemas-microsoft-com:office:excel">
+<DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Title>Αγώνες Τουρνουά</Title><Author>Tournament Manager</Author>
+  <Created>${new Date().toISOString()}</Created>
+</DocumentProperties>
+${styles}
+<Worksheet ss:Name="αγωνες">
+<Table ss:DefaultRowHeight="20">
+  <Column ss:Width="35"/><Column ss:Width="175"/><Column ss:Width="110"/>
+  <Column ss:Width="60"/><Column ss:Width="55"/><Column ss:Width="175"/>
+  <Column ss:Width="110"/><Column ss:Width="60"/><Column ss:Width="55"/>
+  <Column ss:Width="90"/><Column ss:Width="45"/><Column ss:Width="90"/>
+  <Row ss:Height="16">
+    <Cell ss:StyleID="title" ss:MergeAcross="11">
+      <Data ss:Type="String">ΛΙΣΤΑ ΑΓΩΝΩΝ ΤΟΥΡΝΟΥΑ — ${esc(today)}</Data>
+    </Cell>
+  </Row>
+  <Row ss:Height="13">
+    <Cell ss:StyleID="subtitle" ss:MergeAcross="11">
+      <Data ss:Type="String">Σύνολο: ${total} αγώνες  |  BOX: ${byBOX}  |  Kickboxing: ${byKIK}  |  MMA: ${byMMA}</Data>
+    </Cell>
+  </Row>
+  <Row ss:Height="6"><Cell><Data ss:Type="String"></Data></Cell></Row>
+  <Row ss:Height="26">${headerRow}</Row>
+  ${dataRows}
+</Table>
+<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+  <FreezePanes/><FrozenNoSplit/>
+  <SplitHorizontal>4</SplitHorizontal>
+  <TopRowBottomPane>4</TopRowBottomPane>
+  <ActivePane>2</ActivePane>
+</WorksheetOptions>
+</Worksheet>
+</Workbook>`;
+  const blob=new Blob(['\uFEFF'+xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='αγωνες.xls';a.click();URL.revokeObjectURL(url);
+}
+
+// ── CSV Parser ────────────────────────────────────────────────────
+function detectDelimiter(text){
+  const first=text.split('\n').find(l=>l.trim());
+  const sc=(first.match(/;/g)||[]).length;
+  const cm=(first.match(/,/g)||[]).length;
+  return sc>=cm?';':',';
+}
+function parseLine(line,delim){
+  const parts=[];let inQ=false,cur='';
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){inQ=!inQ;}
+    else if(ch===delim&&!inQ){parts.push(cur.trim());cur='';}
+    else{cur+=ch;}
+  }
+  parts.push(cur.trim());
+  return parts;
+}
+function parseCSV(text){
+  const delim=detectDelimiter(text);
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  return {rows:lines.map(l=>parseLine(l,delim)),delim};
+}
+
+// ── Κανονικοποίηση ────────────────────────────────────────────────
+function normalizeGender(v){
+  if(!v)return'';
+  const u=v.trim().toUpperCase();
+  if(u==='Α'||u==='ΑΡΡΕΝ'||u==='ΑΡΡΗΝ'||u==='ΑΝΔΡΑΣ'||u==='Μ'||u==='MALE'||u==='M'||u==='ANDRAS')return'Α';
+  if(u==='Θ'||u==='ΘΗΛΥ'||u==='ΓΥΝΑΙΚΑ'||u==='Γ'||u==='F'||u==='FEMALE'||u==='W'||u==='GYNAIKA')return'Γ';
+  return'';
+}
+function normalizeSport(v){
+  if(!v)return'';
+  const u=v.trim().replace(/\s+/g,' ').toUpperCase()
+    .replace(/Β/g,'B').replace(/Ο/g,'O').replace(/Χ/g,'X')
+    .replace(/Κ/g,'K').replace(/Ι/g,'I').replace(/Μ/g,'M').replace(/Α/g,'A');
+  if(u==='MMA'||u.startsWith('MMA'))return'MMA';
+  if(u==='KIK'||u==='KICK'||u==='KICKBOXING'||u.startsWith('KIK')||u.startsWith('KICK'))return'Kickboxing';
+  if(u==='BOX'||u==='BOXING'||u.startsWith('BOX'))return'BOX';
+  // Also handle already-normalised value from our own CSV export
+  if(v.trim().toLowerCase()==='kickboxing')return'Kickboxing';
+  return'';
+}
+
+// ── Αντιστοίχιση κεφαλίδων ───────────────────────────────────────
+const COL_MAPS={
+  id:     ['ID'],
+  name:   ['ΟΝΟΜΑΤΕΠΩΝΥΜΟ','ΟΝΟΜΑ','NAME','ΑΘΛΗΤΗΣ'],
+  team:   ['ΟΜΑΔΑ','ΣΥΛΛΟΓΟΣ','ΣΧΟΛΗ','CLUB','TEAM'],
+  gender: ['ΦΥΛΟ','GENDER','ΦΥΛΛΟ','ΦΥΛ'],
+  weight: ['ΚΙΛΑ','ΒΑΡΟΣ','WEIGHT','KG','ΚΙΛΟ'],
+  // Covers: "Έτος Γέννησης" (export), "ΕΤΟΣ ΓΕΝΝΗΣΕΩΣ", "ΗΛΙΚΙΑ", κ.λπ.
+  year:   ['ΕΤΟΣ ΓΕΝΝΗΣΗΣ','ΕΤΟΣ ΓΕΝΝΗΣΕΩΣ','ΕΤΟΣ','ΗΛΙΚΙΑ','YEAR','ΓΕΝΝΗΣΗ'],
+  exp:    ['ΑΓΩΝΕΣ','ΕΜΠΕΙΡΙΑ','ΑΓΩΝΙΣΤΙΚΗ ΕΜΠΕΙΡΙΑ','EXP','EXPERIENCE'],
+  sport:  ['ΑΘΛΗΜΑ','ΣΤΥΛ','SPORT','DISCIPLINE'],
+  paired: ['ΚΑΤΑΣΤΑΣΗ','STATUS'],
+};
+
+function mapHeaders(headerRow){
+  const map={};
+
+  // clean(): αφαιρεί τόνους και κρατάει μόνο γράμματα+ψηφία+κενά, uppercase
+  const clean=h=>{
+    // Βήμα 1: NFD decomposition → αφαίρεση combining accents (τόνοι, διαλυτικά)
+    const noAccent=h.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    // Βήμα 2: κρατάμε μόνο γράμματα (οποιοδήποτε script) + ψηφία + κενό
+    // Χρησιμοποιούμε \p{L} αντί για hard-coded ranges ώστε να καλύπτει ΟΛΑ τα ελληνικά
+    return noAccent.replace(/[^\p{L}\p{N} ]/gu,'').trim().toUpperCase();
+  };
+
+  // Πέρασμα 1: ακριβής αντιστοίχιση
+  headerRow.forEach((h,i)=>{
+    const hc=clean(h);if(!hc)return;
+    for(const[field,aliases]of Object.entries(COL_MAPS)){
+      if(field in map)continue;
+      if(aliases.some(a=>hc===a)){map[field]=i;return;}
+    }
+  });
+
+  // Πέρασμα 2: includes fallback (μόνο για aliases > 3 χαρακτήρες)
+  headerRow.forEach((h,i)=>{
+    const hc=clean(h);if(!hc)return;
+    for(const[field,aliases]of Object.entries(COL_MAPS)){
+      if(field in map)continue;
+      if(aliases.some(a=>a.length>3&&hc.includes(a))){map[field]=i;}
+    }
+  });
+
+  return map;
+}
+
+// ── Import Athletes ───────────────────────────────────────────────
+let parsedAthleteData=null;
+
+function handleAthleteFile(input){
+  const f=input.files[0];if(!f)return;
+  document.getElementById('lbl-athletes').textContent='📄 '+f.name;
+  document.getElementById('drop-athletes').classList.add('has-file');
+  const r=new FileReader();
+  r.onload=e=>{
+    const text=e.target.result.replace(/^\uFEFF/,'');
+    const {rows,delim}=parseCSV(text);
+    let headerIdx=-1,map={};
+    for(let i=0;i<Math.min(rows.length,10);i++){
+      const m=mapHeaders(rows[i]);
+      if(Object.keys(m).length>=3){headerIdx=i;map=m;break;}
+    }
+    if(headerIdx===-1){
+      document.getElementById('preview-athletes').innerHTML=`<div class="alert alert-error">Δεν βρέθηκαν έγκυρες κεφαλίδες.</div>`;
+      pendingAthletes=[];parsedAthleteData=null;return;
+    }
+    const dataRows=rows.slice(headerIdx+1).filter(r=>r.some(c=>c.trim()));
+    parsedAthleteData={rows:dataRows,map,delim};
+    const found=Object.entries(map).map(([f,i])=>`<em>${f}</em>→col${i+1}`).join(', ');
+    document.getElementById('preview-athletes').innerHTML=`
+      <div class="alert alert-info">
+        Βρέθηκαν <strong>${dataRows.length}</strong> γραμμές · Διαχωριστικό: <code>${delim===','?'κόμμα':'ελληνικό ερωτηματικό (;)'}</code><br>
+        <span style="font-size:12px;opacity:.8">Αντιστοίχιση: ${found}</span>
+      </div>`;
+    pendingAthletes=dataRows;
+  };
+  r.readAsText(f,'UTF-8');
+}
+
+async function importAthletes(){
+  if(!pendingAthletes.length||!parsedAthleteData){showAlert('import-alert','Δεν έχεις επιλέξει αρχείο αθλητών.','error');return;}
+  const {map}=parsedAthleteData;
+  let added=0,skipped=0,errors=[];
+
+  for(const [cols,rowIdx] of pendingAthletes.entries()){
+    const get=(field,def='')=>(map[field]!==undefined&&cols[map[field]]!==undefined)?cols[map[field]].trim():def;
+    const rowNum=rowIdx+1;
+    const name=get('name'),team=get('team','—');
+    const gender=normalizeGender(get('gender'));
+    const weightRaw=get('weight'),yearRaw=get('year'),expRaw=get('exp','0');
+    const sport=normalizeSport(get('sport'));
+    const paired=get('paired')==='Ζευγαρωμένος';
+    const rowErrors=[];
+    if(!name)rowErrors.push(`Γραμμή ${rowNum}: κενό ΟΝΟΜΑΤΕΠΩΝΥΜΟ`);
+    const weight=parseFloat(weightRaw);
+    if(weightRaw===''||isNaN(weight))rowErrors.push(`Γραμμή ${rowNum} (${name||'?'}): ΚΙΛΑ δεν είναι αριθμός`);
+    else if(weight<20||weight>200)rowErrors.push(`Γραμμή ${rowNum} (${name}): ΚΙΛΑ εκτός ορίων`);
+    const year=parseInt(yearRaw);
+    if(yearRaw===''||isNaN(year))rowErrors.push(`Γραμμή ${rowNum} (${name||'?'}): ΕΤΟΣ δεν είναι αριθμός`);
+    else if(year<1950||year>2025)rowErrors.push(`Γραμμή ${rowNum} (${name}): ΕΤΟΣ εκτός ορίων`);
+    const exp=isNaN(parseInt(expRaw))?0:parseInt(expRaw);
+    if(rowErrors.length){errors.push(...rowErrors);skipped++;continue;}
+    const finalGender=gender||'Α',finalSport=sport||'BOX';
+    if(db.athletes.find(a=>a.name===name&&sameTeam(a.team,team))){skipped++;continue;}
+
+    const athlete={name,team,gender:finalGender,weight,year,exp,sport:finalSport,paired};
+    if(DB_MODE){
+      const res=await apiPost('athletes',athlete);
+      if(res.ok){athlete.id=res.data.id;db.athletes.push(athlete);added++;}
+      else{errors.push(`Γραμμή ${rowNum} (${name}): ${res.error}`);skipped++;}
+    } else {
+      athlete.id=db.nextId++;
+      db.athletes.push(athlete);
+      added++;
+    }
+  }
+
+  pendingAthletes=[];parsedAthleteData=null;
+  document.getElementById('preview-athletes').innerHTML='';
+  document.getElementById('lbl-athletes').textContent='Κλικ ή σύρε το αρχείο εδώ';
+  document.getElementById('drop-athletes').classList.remove('has-file');
+  let msg=`✓ Αθλητές: <strong>${added}</strong> εισήχθησαν`;
+  if(skipped)msg+=` · <strong>${skipped}</strong> παραλείφθηκαν`;
+  if(errors.length){
+    const shown=errors.slice(0,5);
+    msg+=`<br><small style="color:#922B21">${shown.join('<br>')}${errors.length>5?`<br>...και ${errors.length-5} ακόμα`:''}</small>`;
+    showAlert('import-alert',msg,'warning');
+  } else {showAlert('import-alert',msg,'success');}
+}
+
+// ── Import Matches (CSV or XLS/SpreadsheetML) ─────────────────────
+function handleMatchFile(input){
+  const f=input.files[0];if(!f)return;
+  document.getElementById('lbl-matches').textContent='📄 '+f.name;
+  document.getElementById('drop-matches').classList.add('has-file');
+  const r=new FileReader();
+  r.onload=e=>{
+    const raw=e.target.result;
+    // Detect XLS (SpreadsheetML = XML text) vs CSV
+    const text=raw.replace(/^\uFEFF/,'');
+    let dataRows=[];
+    if(text.trimStart().startsWith('<?xml')||text.includes('Workbook')){
+      dataRows=parseXLSMatches(text);
+    } else {
+      // CSV path: header row has "Κόκκινη Γωνία" or old "Αθλητής 1"
+      const {rows}=parseCSV(text);
+      dataRows=rows.slice(1).filter(r=>r.some(c=>c.trim())&&r.length>=10);
+    }
+    pendingMatches=dataRows;
+    document.getElementById('preview-matches').innerHTML=
+      `<div class="alert alert-info">Βρέθηκαν <strong>${dataRows.length}</strong> αγώνες. Πάτησε "Εισαγωγή Αγώνων" για να φορτωθούν.</div>`;
+  };
+  r.readAsText(f,'UTF-8');
+}
+
+// Parse SpreadsheetML (.xls) exported by this app
+// Expected column order (after header rows): #|Κόκκινη|Ομάδα1|Έτος1|Κιλά1|Μπλε|Ομάδα2|Έτος2|Κιλά2|Άθλημα|Φύλο|Ημερομηνία
+function parseXLSMatches(xml){
+  const rows=[];
+  // Extract all <Row> elements after the header row
+  const rowMatches=[...xml.matchAll(/<Row[^>]*>([\s\S]*?)<\/Row>/gi)];
+  let dataStarted=false;
+  for(const rm of rowMatches){
+    const rowXml=rm[1];
+    // Extract cell values
+    const cells=[...rowXml.matchAll(/<Data[^>]*>([\s\S]*?)<\/Data>/gi)].map(m=>
+      m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').trim()
+    );
+    if(!cells.length)continue;
+    // Skip title/subtitle/empty rows; start at the row where col0 is a number (match id)
+    if(!dataStarted){
+      // Header row has "Κόκκινη Γωνία" or "#"
+      if(cells[0]==='#'||cells[1]&&(cells[1].includes('Γωνία')||cells[1].includes('Αθλητής'))){
+        dataStarted=true;continue;
+      }
+      continue;
+    }
+    if(cells.length>=10) rows.push(cells);
+  }
+  return rows;
+}
+
+async function importMatches(){
+  if(!pendingMatches.length){showAlert('import-alert','Δεν έχεις επιλέξει αρχείο αγώνων.','error');return;}
+  if(!db.athletes.length){showAlert('import-alert','Εισάγαγε πρώτα τους αθλητές!','error');return;}
+  let added=0,skipped=0;
+  for(const cols of pendingMatches){
+    if(cols.length<10){skipped++;continue;}
+    // cols: 0=#  1=name1  2=team1  3=year1  4=kg1  5=name2  6=team2  7=year2  8=kg2  9=sport  10=gender  11=date
+    const n1=cols[1],t1=cols[2],n2=cols[5],t2=cols[6];
+    const date=cols[11]||new Date().toLocaleDateString('el-GR');
+    const a1=db.athletes.find(a=>a.name===n1&&sameTeam(a.team,t1));
+    const a2=db.athletes.find(a=>a.name===n2&&sameTeam(a.team,t2));
+    if(!a1||!a2){skipped++;continue;}
+    if(db.matches.find(m=>m.athlete1.id===a1.id&&m.athlete2.id===a2.id)){skipped++;continue;}
+    if(DB_MODE){
+      const res=await apiPost('matches',{athlete1_id:a1.id,athlete2_id:a2.id,date});
+      if(res.ok){a1.paired=true;a2.paired=true;db.matches.push({id:res.data.id,athlete1:a1,athlete2:a2,date});added++;}
+      else skipped++;
+    } else {
+      a1.paired=true;a2.paired=true;
+      db.matches.push({id:db.matchId++,athlete1:a1,athlete2:a2,date});added++;
+    }
+  }
+  pendingMatches=[];
+  document.getElementById('preview-matches').innerHTML='';
+  document.getElementById('lbl-matches').textContent='Κλικ ή σύρε το αρχείο εδώ';
+  document.getElementById('drop-matches').classList.remove('has-file');
+  showAlert('import-alert',`✓ Αγώνες: <strong>${added}</strong> εισήχθησαν${skipped?` · ${skipped} παραλείφθηκαν`:'.'}`,'success');
+}
+
+// ── Reset ─────────────────────────────────────────────────────────
+function openResetModal(){document.getElementById('reset-modal').classList.add('open');}
+function closeResetModal(){document.getElementById('reset-modal').classList.remove('open');}
+async function resetAll(){
+  if(DB_MODE){
+    const res=await apiPost('reset',{});
+    if(!res.ok){alert('Σφάλμα reset: '+res.error);closeResetModal();return;}
+  }
+  db={athletes:[],matches:[],nextId:1,matchId:1};
+  currentPairCandidates=[];rejectedPairs=new Set();
+  pendingAthletes=[];pendingMatches=[];
+  closeResetModal();
+  switchTab('register');
+  showAlert('reg-alert','Τα δεδομένα διαγράφηκαν. Ξεκίνα νέο τουρνουά!','success');
+}
+
+// ── Εκκίνηση ─────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
