@@ -113,6 +113,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
 .fb-ideal{background:#D5F5E3;color:#1E8449}
 .fb-1{background:#FEF9E7;color:#7D6608}
 .fb-2{background:#FADBD8;color:#922B21}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -355,141 +356,84 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════════════
-//  TOURNAMENT MANAGER — JavaScript
-//  Υποστηρίζει δύο λειτουργίες:
-//    • DB_MODE = true  → MySQL μέσω api.php (XAMPP)
-//    • DB_MODE = false → Τοπική μνήμη (standalone HTML)
-// ════════════════════════════════════════════════════════════════
+<script>
+// 1. Ρυθμίσεις Supabase - Βάλε τα δικά σου στοιχεία εδώ
+const SUPABASE_URL = 'ΤΟ_URL_ΣΟΥ';
+const SUPABASE_KEY = 'ΤΟ_ANON_KEY_ΣΟΥ';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const API = 'api.php';   // Σχετική διεύθυνση του PHP backend
-let DB_MODE = false;     // Ενεργοποιείται αυτόματα αν βρεθεί το api.php
+// 2. Η κεντρική "μνήμη" της εφαρμογής
+let db = { athletes: [], matches: [] };
+let currentPairCandidates = [], rejectedPairs = new Set();
+let pendingAthletes = [], pendingMatches = [];
 
-let db = { athletes:[], matches:[], nextId:1, matchId:1 };
-let currentPairCandidates=[], rejectedPairs=new Set();
-let pendingAthletes=[], pendingMatches=[];
+// 3. Εκκίνηση εφαρμογής - Φορτώνει τα πάντα από το Cloud
+async function init() {
+    try {
+        // Φόρτωση Αθλητών
+        const athletesRes = await _supabase.from('athletes').select('*');
+        if (athletesRes.error) throw athletesRes.error;
+        db.athletes = athletesRes.data || [];
 
-// ── Εκκίνηση ─────────────────────────────────────────────────────
-async function init(){
-  // Δοκιμή σύνδεσης με το backend
-  try {
-    const r = await fetch(API+'?action=athletes', {method:'GET'});
-    if(r.ok){
-      DB_MODE = true;
-      document.getElementById('db-status-bar').style.display='block';
-      await loadFromDB();
+        // Φόρτωση Αγώνων
+        const matchesRes = await _supabase.from('matches').select('*, athlete1:athlete1_id(*), athlete2:athlete2_id(*)');
+        if (matchesRes.error) throw matchesRes.error;
+        db.matches = matchesRes.data || [];
+
+        console.log("Σύνδεση με Supabase επιτυχής!");
+        renderAthletes();
+    } catch (e) {
+        console.error("Σφάλμα κατά την εκκίνηση:", e.message);
+        showAlert('reg-alert', 'Αποτυχία σύνδεσης με τη βάση δεδομένων.', 'error');
     }
-  } catch(e){
-    // Δεν βρέθηκε api.php — λειτουργία standalone
-    DB_MODE = false;
-  }
 }
 
-async function loadFromDB(){
-  if(!DB_MODE) return;
-  try {
-    // Φόρτωση αθλητών
-    const ar = await fetch(API+'?action=athletes').then(r=>r.json());
-    if(ar.ok){
-      db.athletes = ar.data;
-      db.nextId = ar.data.length ? Math.max(...ar.data.map(a=>a.id))+1 : 1;
+// 4. Εγγραφή Αθλητή στο Supabase
+async function registerAthlete() {
+    const name = document.getElementById('f-name').value.trim();
+    const team = document.getElementById('f-team').value.trim();
+    const gender = document.getElementById('f-gender').value;
+    const weight = parseFloat(document.getElementById('f-weight').value);
+    const year = parseInt(document.getElementById('f-year').value);
+    const exp = parseInt(document.getElementById('f-exp').value);
+    const sport = document.getElementById('f-sport').value;
+
+    if (!name || !team || !gender || !weight || !year || isNaN(exp) || !sport) {
+        showAlert('reg-alert', 'Παρακαλώ συμπληρώστε όλα τα πεδία.', 'error');
+        return;
     }
-    // Φόρτωση αγώνων
-    const mr = await fetch(API+'?action=matches').then(r=>r.json());
-    if(mr.ok){
-      db.matches = mr.data;
-      db.matchId = mr.data.length ? Math.max(...mr.data.map(m=>m.id))+1 : 1;
+
+    const newAthlete = { name, team, gender, weight, year, exp, sport, paired: false };
+
+    const { data, error } = await _supabase.from('athletes').insert([newAthlete]).select();
+
+    if (error) {
+        showAlert('reg-alert', 'Σφάλμα Cloud: ' + error.message, 'error');
+    } else {
+        db.athletes.push(data[0]);
+        showAlert('reg-alert', `Ο αθλητής <strong>${name}</strong> καταχωρήθηκε επιτυχώς!`, 'success');
+        
+        // Καθαρισμός πεδίων
+        ['f-name', 'f-team', 'f-weight', 'f-year', 'f-exp'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('f-gender').value = '';
+        document.getElementById('f-sport').value = '';
+        renderAthletes();
     }
-  } catch(e){ console.error('loadFromDB error:',e); }
 }
 
-// ── API helpers ───────────────────────────────────────────────────
-async function apiPost(action, body){
-  const r = await fetch(API+'?action='+action, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(body)
-  });
-  return r.json();
+// 5. Διαγραφή Αθλητή από το Supabase
+async function deleteAthlete(id) {
+    if (!confirm('Οριστική διαγραφή αθλητή;')) return;
+
+    const { error } = await _supabase.from('athletes').delete().eq('id', id);
+
+    if (error) {
+        alert('Σφάλμα διαγραφής: ' + error.message);
+    } else {
+        db.athletes = db.athletes.filter(a => a.id !== id);
+        renderAthletes();
+    }
 }
-async function apiPut(action, body){
-  const r = await fetch(API+'?action='+action, {
-    method:'PUT', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(body)
-  });
-  return r.json();
-}
-async function apiDelete(action, body){
-  const r = await fetch(API+'?action='+action, {
-    method:'DELETE', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(body)
-  });
-  return r.json();
-}
-
-// ── Tabs ──────────────────────────────────────────────────────────
-function switchTab(t){
-  ['register','athletes','matchmaking','matches','unpaired','import'].forEach((id,i)=>{
-    document.getElementById('tab-'+id).classList.toggle('active',id===t);
-    document.querySelectorAll('.tab')[i].classList.toggle('active',id===t);
-  });
-  if(t==='athletes')renderAthletes();
-  if(t==='matches')renderMatches();
-  if(t==='unpaired')renderUnpaired();
-}
-
-// ── Alerts ────────────────────────────────────────────────────────
-function showAlert(id,msg,type='info'){
-  const el=document.getElementById(id);
-  if(!msg){el.innerHTML='';return;}
-  el.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
-  if(type==='success')setTimeout(()=>el.innerHTML='',5000);
-}
-
-// ── Register ──────────────────────────────────────────────────────
-async function registerAthlete(){
-  const name=document.getElementById('f-name').value.trim();
-  const team=document.getElementById('f-team').value.trim();
-  const gender=document.getElementById('f-gender').value;
-  const weight=parseFloat(document.getElementById('f-weight').value);
-  const year=parseInt(document.getElementById('f-year').value);
-  const exp=parseInt(document.getElementById('f-exp').value);
-  const sport=document.getElementById('f-sport').value;
-  if(!name||!team||!gender||!weight||!year||isNaN(exp)||!sport){showAlert('reg-alert','Παρακαλώ συμπληρώστε όλα τα πεδία.','error');return;}
-  if(year<1950||year>2024){showAlert('reg-alert','Μη έγκυρο έτος γέννησης (1950–2024).','error');return;}
-  if(weight<20||weight>200){showAlert('reg-alert','Μη έγκυρο βάρος (20–200 kg).','error');return;}
-
-  const athlete = {name,team,gender,weight,year,exp,sport,paired:false};
-
-  if(DB_MODE){
-    const res = await apiPost('athletes', athlete);
-    if(!res.ok){showAlert('reg-alert','Σφάλμα αποθήκευσης: '+res.error,'error');return;}
-    athlete.id = res.data.id;
-    db.athletes.push(athlete);
-  } else {
-    athlete.id = db.nextId++;
-    db.athletes.push(athlete);
-  }
-
-  showAlert('reg-alert',`Ο αθλητής <strong>${name}</strong> καταχωρήθηκε επιτυχώς!${DB_MODE?' (αποθηκεύτηκε στη βάση)':''}`,'success');
-  ['f-name','f-team','f-weight','f-year','f-exp'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-gender').value='';
-  document.getElementById('f-sport').value='';
-}
-
-async function deleteAthlete(id){
-  if(!confirm('Διαγραφή αθλητή;'))return;
-  if(DB_MODE){
-    const res = await apiDelete('athletes',{id});
-    if(!res.ok){alert('Σφάλμα διαγραφής: '+res.error);return;}
-  }
-  db.athletes=db.athletes.filter(a=>a.id!==id);
-  renderAthletes();
-}
-
-// ── Team normalization ────────────────────────────────────────────
-function teamKey(t){return(t||'').trim().toUpperCase();}
-function sameTeam(t1,t2){return teamKey(t1)===teamKey(t2);}
-
 // ── Edit Athlete ──────────────────────────────────────────────────
 let editingId=null;
 function openEditModal(id){
