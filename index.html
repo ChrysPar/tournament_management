@@ -15,7 +15,7 @@
   --border:#e0e0e0;--border2:#cccccc;
   --text:#1a1a1a;--text2:#666666;
   --green:#1a7a4a;--green-light:#D5F5E3;
-  -cloud-blue: #1a5276; /* Προσθήκη για το Status Bar */
+  --cloud-blue: #1a5276;
 }
 body{font-family:'Barlow',sans-serif;font-size:15px;color:var(--text);background:#eef0f3;min-height:100vh;padding:24px}
 .app{max-width:1150px;margin:0 auto;border-radius:14px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.13)}
@@ -119,7 +119,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
 <body>
 
 <div class="app">
-  <<div class="header">
+  <div class="header">
     <div>
       <div class="logo">TOURNAMENT <span>MANAGER</span></div>
       <div class="subtitle">Σύστημα Διαχείρισης Τουρνουά Πολεμικών Τεχνών</div>
@@ -1232,6 +1232,52 @@ async function resetAll() {
         alert("Αποτυχία: " + err.message);
     }
 }
+// ── switchTab ─────────────────────────────────────────────────────
+// Εναλλαγή καρτελών 
+function switchTab(t) {
+  const ids = ['register','athletes','matchmaking','matches','unpaired','import'];
+  ids.forEach((id, i) => {
+    const panel = document.getElementById('tab-' + id);
+    const tab   = document.querySelectorAll('.tab')[i];
+    if (panel) panel.classList.toggle('active', id === t);
+    if (tab)   tab.classList.toggle('active', id === t);
+  });
+  if (t === 'athletes')   renderAthletes();
+  if (t === 'matches')    renderMatches();
+  if (t === 'unpaired')   renderUnpaired();
+}
+
+// ── showAlert ─────────────────────────────────────────────────────
+// Εμφάνιση μηνύματος σε συγκεκριμένο container
+function showAlert(id, msg, type = 'info') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!msg) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  if (type === 'success') setTimeout(() => { if(el) el.innerHTML = ''; }, 5000);
+}
+
+// ── rejectPair ────────────────────────────────────────────────────
+// Απόρριψη ζευγαριού και εμφάνιση επόμενης πρότασης — λείπε εντελώς
+function rejectPair(key) {
+  rejectedPairs.add(key);
+  const avail = db.athletes.filter(a => !a.paired);
+  let found = false;
+  for (const step of PAIRING_STEPS) {
+    const remaining = buildPairs(avail, step).filter(p => !rejectedPairs.has(p.key));
+    if (remaining.length) {
+      currentPairCandidates = remaining;
+      renderPairDisplay(remaining[0].a, remaining[0].b, remaining[0].score, remaining[0].key, remaining[0].badgeClass, remaining[0].badgeText);
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    showAlert('mm-alert', 'Δεν υπάρχουν άλλες προτάσεις ζευγαρώματος.', 'warning');
+    document.getElementById('pair-display').innerHTML = '';
+  }
+}
+
 // ── Εκκίνηση ─────────────────────────────────────────────────────
 init();
 </script>
