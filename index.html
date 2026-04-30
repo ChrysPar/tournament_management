@@ -685,13 +685,6 @@ function renderUnpaired() {
   }
 
   // Group by sport + gender
-  const groups={};
-  unpaired.forEach(a=>{
-    const key=`${a.sport}|${a.gender}`;
-    if(!groups[key])groups[key]={sport:a.sport,gender:a.gender,athletes:[]};
-    groups[key].athletes.push(a);
-  });
-
  const groups = {};
   unpaired.forEach(a => {
     const key = `${a.sport}|${a.gender}`;
