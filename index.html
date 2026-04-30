@@ -804,6 +804,7 @@ function exportMatchesXLS() {
     return;
   }
 
+  // Κρατάμε ΜΟΝΟ αυτή τη δήλωση styles που είναι η πλήρης
   const styles = `
   <Styles>
     <Style ss:ID="Default" ss:Name="Normal">
@@ -814,28 +815,6 @@ function exportMatchesXLS() {
       <NumberFormat/>
       <Protection/>
     </Style>
-    <Style ss:ID="header">
-      <Font ss:Bold="1" ss:Color="#FFFFFF"/>
-      <Interior ss:Color="#1a1a2e" ss:Pattern="Solid"/>
-    </Style>
-  </Styles>
-`;
-
-  const today = new Date().toLocaleDateString('el-GR');
-  // Συνάρτηση για καθαρισμό ειδικών χαρακτήρων XML
-  const esc = s => s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
-
-  // Υπολογισμός στατιστικών για το υποσέλιδο του Excel
-  const total = db.matches.length;
-  const stats = { BOX: 0, Kickboxing: 0, MMA: 0 };
-  db.matches.forEach(m => {
-    const s = m.athlete1?.sport;
-    if (s && stats[s] !== undefined) stats[s]++;
-  });
-
-  // Κράτησα τα Styles που μου έστειλες γιατί είναι εξαιρετικά
-  const styles = `
-  <Styles>
     <Style ss:ID="header_red"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#922B21" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
     <Style ss:ID="header_blue"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1A5276" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
     <Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1a1a2e" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
@@ -849,6 +828,16 @@ function exportMatchesXLS() {
     <Style ss:ID="even_blue"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Font ss:Bold="1"/><Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1A5276"/></Borders></Style>
     <Style ss:ID="num"><Alignment ss:Horizontal="Center"/></Style>
   </Styles>`;
+
+  const today = new Date().toLocaleDateString('el-GR');
+  const esc = s => s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
+
+  const total = db.matches.length;
+  const stats = { BOX: 0, Kickboxing: 0, MMA: 0 };
+  db.matches.forEach(m => {
+    const s = m.athlete1?.sport;
+    if (s && stats[s] !== undefined) stats[s]++;
+  });
 
   const headerRow = `
     <Row ss:Height="25">
@@ -867,7 +856,6 @@ function exportMatchesXLS() {
 
   const dataRows = db.matches.map((m, i) => {
     const st = i % 2 === 0 ? 'odd' : 'even';
-    // Ασφαλής πρόσβαση στα δεδομένα των αθλητών
     const a1 = m.athlete1 || {};
     const a2 = m.athlete2 || {};
     
