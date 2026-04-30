@@ -804,6 +804,23 @@ function exportMatchesXLS() {
     return;
   }
 
+  const styles = `
+  <Styles>
+    <Style ss:ID="Default" ss:Name="Normal">
+      <Alignment ss:Vertical="Bottom"/>
+      <Borders/>
+      <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+      <Interior/>
+      <NumberFormat/>
+      <Protection/>
+    </Style>
+    <Style ss:ID="header">
+      <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#1a1a2e" ss:Pattern="Solid"/>
+    </Style>
+  </Styles>
+`;
+
   const today = new Date().toLocaleDateString('el-GR');
   // Συνάρτηση για καθαρισμό ειδικών χαρακτήρων XML
   const esc = s => s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
