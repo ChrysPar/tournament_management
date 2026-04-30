@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tournament Manager — Εγγραφές Αθλητών</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="icon" href="data:,">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -404,8 +403,21 @@ async function registerAthlete() {
         paired: false
     };
 
-    if (Object.values(fields).some(v => v === "" || v === null || isNaN(v))) {
+    // Έλεγχος ότι τα string πεδία δεν είναι κενά και τα αριθμητικά είναι έγκυροι αριθμοί
+    if (!fields.name || !fields.team || !fields.gender || !fields.sport) {
         showAlert('reg-alert', 'Συμπλήρωσε όλα τα πεδία!', 'error');
+        return;
+    }
+    if (isNaN(fields.weight) || fields.weight < 20 || fields.weight > 200) {
+        showAlert('reg-alert', 'Μη έγκυρο βάρος (20–200 kg).', 'error');
+        return;
+    }
+    if (isNaN(fields.year) || fields.year < 1950 || fields.year > 2024) {
+        showAlert('reg-alert', 'Μη έγκυρο έτος γέννησης (1950–2024).', 'error');
+        return;
+    }
+    if (isNaN(fields.exp) || fields.exp < 0) {
+        showAlert('reg-alert', 'Μη έγκυρος αριθμός αγώνων.', 'error');
         return;
     }
 
@@ -1234,7 +1246,7 @@ async function resetAll() {
     }
 }
 // ── switchTab ─────────────────────────────────────────────────────
-// Εναλλαγή καρτελών 
+// Εναλλαγή καρτελών — λείπε εντελώς από τον κώδικα
 function switchTab(t) {
   const ids = ['register','athletes','matchmaking','matches','unpaired','import'];
   ids.forEach((id, i) => {
@@ -1249,7 +1261,7 @@ function switchTab(t) {
 }
 
 // ── showAlert ─────────────────────────────────────────────────────
-// Εμφάνιση μηνύματος σε συγκεκριμένο container
+// Εμφάνιση μηνύματος σε συγκεκριμένο container — λείπε εντελώς
 function showAlert(id, msg, type = 'info') {
   const el = document.getElementById(id);
   if (!el) return;
