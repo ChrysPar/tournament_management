@@ -531,7 +531,7 @@ function buildPairs(avail, step) {
 }
 function findNextPair(){rejectedPairs=new Set();currentPairCandidates=[];generatePair();}
 function generatePair() {
-    const avail = db.athletes.filter(a => !a.paired);
+    const avail = db.athletes.filter(a => !isPaired(a));
     if (avail.length < 2) { showAlert('mm-alert', 'Δεν υπάρχουν διαθέσιμοι αθλητές.', 'warning'); return; }
     let allPairs = [];
     for (const step of PAIRING_STEPS) { allPairs = buildPairs(avail, step); if (allPairs.length) break; }
@@ -629,7 +629,7 @@ function renderAthletes(){
     <td><span class="gender-badge ${a.gender==='Α'?'gender-M':'gender-F'}">${a.gender}</span></td>
     <td>${a.weight} kg</td><td>${a.year}</td><td>${a.exp}</td>
     <td><span class="sport-badge badge-${a.sport}">${a.sport}</span></td>
-    <td style="color:${a.paired?'#1E8449':'var(--text2)'};font-size:12px;font-weight:${a.paired?600:400}">${a.paired?'✓ Ζευγαρωμένος':'Διαθέσιμος'}</td>
+    <td style="color:${isPaired(a)?'#1E8449':'var(--text2)'};font-size:12px;font-weight:${isPaired(a)?600:400}">${isPaired(a)?'✓ Ζευγαρωμένος':'Διαθέσιμος'}</td>
     <td style="display:flex;gap:5px;align-items:center">
       <button class="edit-btn" onclick="openEditModal(${a.id})" title="Επεξεργασία">✏</button>
       <button class="del-btn" onclick="deleteAthlete(${a.id})" title="Διαγραφή">✕</button>
@@ -682,10 +682,15 @@ function renderMatches() {
   </tr>`).join('')}</tbody></table>`;
 }
 
+// ── Βοηθητική: έλεγχος αν αθλητής είναι ζευγαρωμένος
+// Το Supabase επιστρέφει boolean αλλά καμιά φορά ως null ή string
+function isPaired(a) {
+  return a.paired === true || a.paired === 'true';
+}
+
 // ── Render Unpaired ───────────────────────────────────────────────
 function renderUnpaired() {
-  // Φιλτράρουμε τους αθλητές που η στήλη paired στο Supabase είναι false
-  const unpaired = db.athletes.filter(a => !a.paired);
+  const unpaired = db.athletes.filter(a => !isPaired(a));
   const total = unpaired.length;
   
   const countEl = document.getElementById('unpaired-count');
@@ -1229,20 +1234,34 @@ function closeResetModal(){document.getElementById('reset-modal').classList.remo
 async function resetAll() {
     if (!confirm('ΠΡΟΣΟΧΗ: Θα διαγραφούν ΟΛΟΙ οι αθλητές και οι αγώνες από το Cloud!')) return;
 
+    closeResetModal();
+
     try {
-        // ΠΡΩΤΑ οι αγώνες (λόγω περιορισμών της βάσης)
-        const { error: e1 } = await _supabase.from('matches').delete().neq('id', 0);
+        // ΠΡΩΤΑ οι αγώνες (λόγω foreign key constraints)
+        const { error: e1 } = await _supabase.from('matches').delete().gte('id', 0);
         if (e1) throw e1;
 
         // ΜΕΤΑ οι αθλητές
-        const { error: e2 } = await _supabase.from('athletes').delete().neq('id', 0);
+        const { error: e2 } = await _supabase.from('athletes').delete().gte('id', 0);
         if (e2) throw e2;
 
-        // Φρεσκάρισμα σελίδας για να ξεκινήσουν όλα από το μηδέν
-        location.reload();
+        // Καθαρισμός τοπικής μνήμης χωρίς reload
+        db.athletes = [];
+        db.matches  = [];
+        currentPairCandidates = [];
+        rejectedPairs = new Set();
+
+        // Ανανέωση UI
+        renderAthletes();
+        renderMatches();
+        renderUnpaired();
+        document.getElementById('pair-display').innerHTML = '';
+        switchTab('register');
+        showAlert('reg-alert', 'Το τουρνουά μηδενίστηκε. Μπορείς να ξεκινήσεις νέες εγγραφές!', 'success');
+
     } catch (err) {
         console.error("Σφάλμα reset:", err.message);
-        alert("Αποτυχία: " + err.message);
+        showAlert('reg-alert', 'Αποτυχία μηδενισμού: ' + err.message, 'error');
     }
 }
 // ── switchTab ─────────────────────────────────────────────────────
