@@ -826,18 +826,16 @@ function exportMatchesXLS() {
     <Style ss:ID="num"><Alignment ss:Horizontal="Center"/></Style>
   </Styles>`;
 
+  // 2. Υπολογισμός στατιστικών (με σωστά ονόματα για το template)
+  const total = db.matches.length;
+  const byBOX = db.matches.filter(m => m.athlete1?.sport === 'BOX').length;
+  const byKIK = db.matches.filter(m => m.athlete1?.sport === 'Kickboxing').length;
+  const byMMA = db.matches.filter(m => m.athlete1?.sport === 'MMA').length;
+
+  //-------------------
   const today = new Date().toLocaleDateString('el-GR');
   const esc = s => s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
 
-  // 2. Υπολογισμός στατιστικών (με σωστά ονόματα για το template)
-  const total = db.matches.length;
-  let byBOX = 0, byKIK = 0, byMMA = 0;
-  db.matches.forEach(m => {
-    const s = m.athlete1?.sport;
-    if (s === 'BOX') byBOX++;
-    else if (s === 'Kickboxing') byKIK++;
-    else if (s === 'MMA') byMMA++;
-  });
 
   const headerRowContent = `
       <Cell ss:StyleID="header"><Data ss:Type="String">#</Data></Cell>
@@ -872,74 +870,6 @@ function exportMatchesXLS() {
     </Row>`;
   }).join('');
 
-  // 3. Τελική σύνθεση XML
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-  ${stylesXml}
-  <Worksheet ss:Name="αγωνες">
-    <Table ss:DefaultRowHeight="20">
-      <Column ss:Width="35"/><Column ss:Width="175"/><Column ss:Width="110"/>
-      <Column ss:Width="60"/><Column ss:Width="55"/><Column ss:Width="175"/>
-      <Column ss:Width="110"/><Column ss:Width="60"/><Column ss:Width="55"/>
-      <Column ss:Width="90"/><Column ss:Width="45"/><Column ss:Width="90"/>
-      <Row ss:Height="25">
-        <Cell ss:StyleID="title" ss:MergeAcross="10">
-          <Data ss:Type="String">ΛΙΣΤΑ ΑΓΩΝΩΝ ΤΟΥΡΝΟΥΑ — ${esc(today)}</Data>
-        </Cell>
-      </Row>
-      <Row ss:Height="20">
-        <Cell ss:StyleID="subtitle" ss:MergeAcross="10">
-          <Data ss:Type="String">Σύνολο: ${total} αγώνες  |  BOX: ${byBOX}  |  Kickboxing: ${byKIK}  |  MMA: ${byMMA}</Data>
-        </Cell>
-      </Row>
-      <Row ss:Height="26">${headerRowContent}</Row>
-      ${dataRows}
-    </Table>
-  </Worksheet>
-</Workbook>`;
-
-  const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `αγωνες_${today.replace(/\//g, '-')}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-  // 1. Υπολογισμός στατιστικών με ασφάλεια (?.), γιατί πλέον έχουμε αντικείμενα αθλητών
-  const total = db.matches.length;
-  const byBOX = db.matches.filter(m => m.athlete1?.sport === 'BOX').length;
-  const byKIK = db.matches.filter(m => m.athlete1?.sport === 'Kickboxing').length;
-  const byMMA = db.matches.filter(m => m.athlete1?.sport === 'MMA').length;
-
-  // 2. Δημιουργία των γραμμών δεδομένων
-  const dataRows = db.matches.map((m, i) => {
-    const st = i % 2 === 0 ? 'odd' : 'even';
-    
-    // Χρησιμοποιούμε βοηθητικές μεταβλητές a1 και a2 για να είναι πιο καθαρός ο κώδικας
-    // Αν για κάποιο λόγο λείπει ο αθλητής (π.χ. διαγράφηκε), βάζουμε ένα κενό αντικείμενο {}
-    const a1 = m.athlete1 || {};
-    const a2 = m.athlete2 || {};
-
-    return `<Row ss:Height="22">
-      <Cell ss:StyleID="num"><Data ss:Type="Number">${m.id}</Data></Cell>
-      <Cell ss:StyleID="${st}_red"><Data ss:Type="String">${esc(a1.name || '---')}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(a1.team || '---')}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a1.year || 0}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a1.weight || 0}</Data></Cell>
-      <Cell ss:StyleID="${st}_blue"><Data ss:Type="String">${esc(a2.name || '---')}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(a2.team || '---')}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a2.year || 0}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a2.weight || 0}</Data></Cell>
-      <Cell ss:StyleID="sport_cell"><Data ss:Type="String">${esc(a1.sport || '---')}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(a1.gender || '---')}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(m.date || '')}</Data></Cell>
-    </Row>`;
-  }).join('');
-
-  // 3. Το XML template παραμένει σχεδόν ίδιο, απλά βεβαιώσου ότι χρησιμοποιείς τις σωστές μεταβλητές
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -950,44 +880,51 @@ function exportMatchesXLS() {
   <Author>Tournament Manager</Author>
   <Created>${new Date().toISOString()}</Created>
 </DocumentProperties>
-${styles}
-<Worksheet ss:Name="αγωνες">
-<Table ss:DefaultRowHeight="20">
-  <Column ss:Width="35"/><Column ss:Width="175"/><Column ss:Width="110"/>
-  <Column ss:Width="60"/><Column ss:Width="55"/><Column ss:Width="175"/>
-  <Column ss:Width="110"/><Column ss:Width="60"/><Column ss:Width="55"/>
-  <Column ss:Width="90"/><Column ss:Width="45"/><Column ss:Width="90"/>
-  <Row ss:Height="20">
-    <Cell ss:StyleID="title" ss:MergeAcross="11">
-      <Data ss:Type="String">ΛΙΣΤΑ ΑΓΩΝΩΝ ΤΟΥΡΝΟΥΑ — ${esc(today)}</Data>
-    </Cell>
-  </Row>
-  <Row ss:Height="15">
-    <Cell ss:StyleID="subtitle" ss:MergeAcross="11">
-      <Data ss:Type="String">Σύνολο: ${total} αγώνες  |  BOX: ${byBOX}  |  Kickboxing: ${byKIK}  |  MMA: ${byMMA}</Data>
-    </Cell>
-  </Row>
-  <Row ss:Height="6"><Cell><Data ss:Type="String"></Data></Cell></Row>
-  <Row ss:Height="26">${headerRow}</Row>
-  ${dataRows}
-</Table>
-<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
-  <FreezePanes/><FrozenNoSplit/>
-  <SplitHorizontal>4</SplitHorizontal>
-  <TopRowBottomPane>4</TopRowBottomPane>
-  <ActivePane>2</ActivePane>
-</WorksheetOptions>
-</Worksheet>
+${stylesXml}
+  <Worksheet ss:Name="αγωνες">
+    <Table ss:DefaultRowHeight="20">
+      <Column ss:Width="35"/><Column ss:Width="175"/><Column ss:Width="110"/>
+      <Column ss:Width="60"/><Column ss:Width="55"/><Column ss:Width="175"/>
+      <Column ss:Width="110"/><Column ss:Width="60"/><Column ss:Width="55"/>
+      <Column ss:Width="90"/><Column ss:Width="45"/><Column ss:Width="90"/>
+      
+      <Row ss:Height="25">
+        <Cell ss:StyleID="title" ss:MergeAcross="10">
+          <Data ss:Type="String">ΛΙΣΤΑ ΑΓΩΝΩΝ ΤΟΥΡΝΟΥΑ — ${esc(today)}</Data>
+        </Cell>
+      </Row>
+      
+      <Row ss:Height="20">
+        <Cell ss:StyleID="subtitle" ss:MergeAcross="10">
+          <Data ss:Type="String">Σύνολο: ${total} αγώνες  |  BOX: ${byBOX}  |  Kickboxing: ${byKIK}  |  MMA: ${byMMA}</Data>
+        </Cell>
+      </Row>
+      
+      <Row ss:Height="6"><Cell ss:MergeAcross="10"><Data ss:Type="String"></Data></Cell></Row>
+      
+      <Row ss:Height="26">${headerRowContent}</Row>
+      
+      ${dataRows}
+    </Table>
+    
+    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+      <FreezePanes/><FrozenNoSplit/>
+      <SplitHorizontal>4</SplitHorizontal>
+      <TopRowBottomPane>4</TopRowBottomPane>
+      <ActivePane>2</ActivePane>
+    </WorksheetOptions>
+  </Worksheet>
 </Workbook>`;
-
-  // 4. Εξαγωγή αρχείου
   const blob = new Blob(['\uFEFF' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `αγωνες_${today.replace(/\//g, '-')}.xls`;
-  a.click();
-  URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `αγωνες_${today.replace(/\//g, '-')}.xls`;
+    document.body.appendChild(a); // Καλό είναι να το προσθέτεις στο body πριν το click
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
 // ── CSV Parser ────────────────────────────────────────────────────
 function detectDelimiter(text){
