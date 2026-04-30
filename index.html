@@ -799,21 +799,18 @@ function dlCSV(content, filename) {
 
 // ── Export Excel (.xls) ───────────────────────────────────────────
 function exportMatchesXLS() {
-  if (!db.matches.length) {
+  if (!db.matches || db.matches.length === 0) {
     alert('Δεν υπάρχουν αγώνες για εξαγωγή.');
     return;
   }
 
-  // Κρατάμε ΜΟΝΟ αυτή τη δήλωση styles που είναι η πλήρης
-  const styles = `
+  // 1. Ορισμός των Styles (Μία φορά, σωστά)
+  const stylesXml = `
   <Styles>
     <Style ss:ID="Default" ss:Name="Normal">
       <Alignment ss:Vertical="Bottom"/>
       <Borders/>
       <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
-      <Interior/>
-      <NumberFormat/>
-      <Protection/>
     </Style>
     <Style ss:ID="header_red"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#922B21" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
     <Style ss:ID="header_blue"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1A5276" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
@@ -832,15 +829,17 @@ function exportMatchesXLS() {
   const today = new Date().toLocaleDateString('el-GR');
   const esc = s => s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
 
+  // 2. Υπολογισμός στατιστικών (με σωστά ονόματα για το template)
   const total = db.matches.length;
-  const stats = { BOX: 0, Kickboxing: 0, MMA: 0 };
+  let byBOX = 0, byKIK = 0, byMMA = 0;
   db.matches.forEach(m => {
     const s = m.athlete1?.sport;
-    if (s && stats[s] !== undefined) stats[s]++;
+    if (s === 'BOX') byBOX++;
+    else if (s === 'Kickboxing') byKIK++;
+    else if (s === 'MMA') byMMA++;
   });
 
-  const headerRow = `
-    <Row ss:Height="25">
+  const headerRowContent = `
       <Cell ss:StyleID="header"><Data ss:Type="String">#</Data></Cell>
       <Cell ss:StyleID="header_red"><Data ss:Type="String">Κόκκινη Γωνία</Data></Cell>
       <Cell ss:StyleID="header_red"><Data ss:Type="String">Ομάδα 1</Data></Cell>
@@ -851,17 +850,15 @@ function exportMatchesXLS() {
       <Cell ss:StyleID="header_blue"><Data ss:Type="String">Έτος 2</Data></Cell>
       <Cell ss:StyleID="header_blue"><Data ss:Type="String">Κιλά 2</Data></Cell>
       <Cell ss:StyleID="header"><Data ss:Type="String">Άθλημα</Data></Cell>
-      <Cell ss:StyleID="header"><Data ss:Type="String">Ημερομηνία</Data></Cell>
-    </Row>`;
+      <Cell ss:StyleID="header"><Data ss:Type="String">Ημερομηνία</Data></Cell>`;
 
   const dataRows = db.matches.map((m, i) => {
     const st = i % 2 === 0 ? 'odd' : 'even';
     const a1 = m.athlete1 || {};
     const a2 = m.athlete2 || {};
-    
     return `
     <Row ss:Height="20">
-      <Cell ss:StyleID="num"><Data ss:Type="Number">${m.id}</Data></Cell>
+      <Cell ss:StyleID="num"><Data ss:Type="Number">${i + 1}</Data></Cell>
       <Cell ss:StyleID="${st}_red"><Data ss:Type="String">${esc(a1.name)}</Data></Cell>
       <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(a1.team)}</Data></Cell>
       <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a1.year || 0}</Data></Cell>
@@ -875,17 +872,28 @@ function exportMatchesXLS() {
     </Row>`;
   }).join('');
 
+  // 3. Τελική σύνθεση XML
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-  ${styles}
-  <Worksheet ss:Name="Αγώνες">
-    <Table>
-      <Column ss:Width="30"/><Column ss:Width="150"/><Column ss:Width="100"/><Column ss:Width="50"/><Column ss:Width="50"/>
-      <Column ss:Width="150"/><Column ss:Width="100"/><Column ss:Width="50"/><Column ss:Width="50"/><Column ss:Width="80"/><Column ss:Width="80"/>
-      <Row><Cell ss:StyleID="title" ss:MergeAcross="10"><Data ss:Type="String">ΛΙΣΤΑ ΑΓΩΝΩΝ — ${today}</Data></Cell></Row>
-      <Row><Cell ss:StyleID="subtitle" ss:MergeAcross="10"><Data ss:Type="String">Σύνολο: ${total} | BOX: ${stats.BOX} | Kick: ${stats.Kickboxing} | MMA: ${stats.MMA}</Data></Cell></Row>
-      ${headerRow}
+  ${stylesXml}
+  <Worksheet ss:Name="αγωνες">
+    <Table ss:DefaultRowHeight="20">
+      <Column ss:Width="35"/><Column ss:Width="175"/><Column ss:Width="110"/>
+      <Column ss:Width="60"/><Column ss:Width="55"/><Column ss:Width="175"/>
+      <Column ss:Width="110"/><Column ss:Width="60"/><Column ss:Width="55"/>
+      <Column ss:Width="90"/><Column ss:Width="45"/><Column ss:Width="90"/>
+      <Row ss:Height="25">
+        <Cell ss:StyleID="title" ss:MergeAcross="10">
+          <Data ss:Type="String">ΛΙΣΤΑ ΑΓΩΝΩΝ ΤΟΥΡΝΟΥΑ — ${esc(today)}</Data>
+        </Cell>
+      </Row>
+      <Row ss:Height="20">
+        <Cell ss:StyleID="subtitle" ss:MergeAcross="10">
+          <Data ss:Type="String">Σύνολο: ${total} αγώνες  |  BOX: ${byBOX}  |  Kickboxing: ${byKIK}  |  MMA: ${byMMA}</Data>
+        </Cell>
+      </Row>
+      <Row ss:Height="26">${headerRowContent}</Row>
       ${dataRows}
     </Table>
   </Worksheet>
@@ -896,7 +904,9 @@ function exportMatchesXLS() {
   const a = document.createElement('a');
   a.href = url;
   a.download = `αγωνες_${today.replace(/\//g, '-')}.xls`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 }
   // 1. Υπολογισμός στατιστικών με ασφάλεια (?.), γιατί πλέον έχουμε αντικείμενα αθλητών
   const total = db.matches.length;
