@@ -82,7 +82,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
 .filter-row select,.filter-row input{font-size:13px;padding:8px 11px;width:auto}
 .del-btn{background:none;border:none;cursor:pointer;color:#bbb;font-size:16px;padding:2px 6px;border-radius:4px;transition:color .15s}
 .del-btn:hover{color:var(--red)}
- 
+
 /* Import panel */
 .import-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:24px;margin-bottom:20px}
 .import-card-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:4px}
@@ -96,7 +96,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
 .tip-card{background:#fffbea;border:1px solid #f0d060;border-radius:12px;padding:22px;margin-top:4px}
 .tip-card-title{font-weight:700;font-size:14px;margin-bottom:10px}
 .tip-card-body{font-size:13px;color:var(--text2);line-height:1.9}
- 
+
 /* Modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
@@ -118,7 +118,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
- 
+
 <div class="app">
   <div class="header">
     <div>
@@ -130,11 +130,11 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
       <button id="btn-lock" class="btn btn-sm" style="background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(255,255,255,0.2);font-size:18px;padding:4px 10px;line-height:1" onclick="unlockAdmin()" title="Είσοδος Διαχειριστή">🔒</button>
     </div>
   </div>
- 
+
   <div id="db-status-bar" style="display:none;background:var(--cloud-blue);color:#fff;font-size:12px;padding:6px 28px;letter-spacing:.5px">
     ✓ Σύνδεση Cloud Ενεργή — οι καταχωρήσεις αποθηκεύονται κεντρικά
   </div>
- 
+
   <div class="tabs">
     <div class="tab active" onclick="switchTab('register')">Εγγραφή Αθλητή</div>
     <div class="tab admin-only" onclick="switchTab('athletes')">Αθλητές</div>
@@ -143,7 +143,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     <div class="tab admin-only" onclick="switchTab('unpaired')">⚠ Εκκρεμότητες</div>
     <div class="tab admin-only" onclick="switchTab('import')">📥 Εισαγωγή Δεδομένων</div>
   </div>
- 
+
   <div class="content">
   <!--ΕΙΣΑΓΩΓΗ-->
     <div id="tab-register" class="panel active">
@@ -192,7 +192,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
         </div>
       </div>
     </div>
- 
+
     <!-- ΑΘΛΗΤΕΣ -->
     <div id="tab-athletes" class="panel">
       <div class="section-header">
@@ -212,7 +212,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
       </div>
       <div id="athletes-container"></div>
     </div>
- 
+
     <!-- ΖΕΥΓΑΡΟΠΟΙΗΣΗ -->
     <div id="tab-matchmaking" class="panel">
       <div class="section-header"><div class="section-title">Ζευγαροποίηση Αθλητών</div></div>
@@ -223,7 +223,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
       </div>
       <div id="pair-display"></div>
     </div>
- 
+
     <!-- ΑΓΩΝΕΣ -->
     <div id="tab-matches" class="panel">
       <div class="section-header">
@@ -236,7 +236,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
       <div class="stats-grid" id="match-stats"></div>
       <div id="matches-container"></div>
     </div>
- 
+
     <!-- ΕΚΚΡΕΜΟΤΗΤΕΣ -->
     <div id="tab-unpaired" class="panel">
       <div class="section-header">
@@ -249,12 +249,12 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
       <div id="unpaired-alert"></div>
       <div id="unpaired-container"></div>
     </div>
- 
+
     <!-- ΕΙΣΑΓΩΓΗ -->
     <div id="tab-import" class="panel">
       <div class="section-header"><div class="section-title">Εισαγωγή Δεδομένων</div></div>
       <div id="import-alert"></div>
- 
+
       <div class="import-card">
         <div class="import-card-title">📋 Βήμα 1 — Εισαγωγή Αθλητών</div>
         <div class="import-card-sub">
@@ -275,7 +275,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
         </div>
         <div id="preview-athletes" class="preview-box"></div>
       </div>
- 
+
       <div class="import-card">
         <div class="import-card-title">🥊 Βήμα 2 — Εισαγωγή Αγώνων</div>
         <div class="import-card-sub">
@@ -296,7 +296,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
         </div>
         <div id="preview-matches" class="preview-box"></div>
       </div>
- 
+
       <div class="tip-card">
         <div class="tip-card-title">💡 Πώς λειτουργεί η αποθήκευση στο Cloud</div>
         <div class="tip-card-body">
@@ -307,10 +307,10 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
         </div>
       </div>
     </div>
- 
+
   </div>
 </div>
- 
+
 <!-- Modal Κωδικού Admin -->
 <div class="modal-bg" id="admin-modal">
   <div class="modal" style="max-width:360px">
@@ -327,7 +327,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     </div>
   </div>
 </div>
- 
+
 <!-- Modal Επεξεργασίας Αθλητή -->
 <div class="modal-bg" id="edit-modal">
   <div class="modal">
@@ -366,7 +366,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     </div>
   </div>
 </div>
- 
+
 <!-- Modal Επαναφοράς -->
 <div class="modal-bg" id="reset-modal">
   <div class="modal">
@@ -381,21 +381,21 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     </div>
   </div>
 </div>
- 
+
 <script>
 // 1. Ρυθμίσεις Supabase - Βάλε τα δικά σου στοιχεία εδώ
 const SUPABASE_URL = 'https://fykjgtnwvmtotmmracfw.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5a2pndG53dm10b3RtbXJhY2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjYzNzEsImV4cCI6MjA5MjkwMjM3MX0.TbxZ_WFt_2R2HPxQcqcn_iwKc83cfhf-rdnknyL0RTM';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
- 
+
 // 2. Η κεντρική "μνήμη" της εφαρμογής
 let db = { athletes: [], matches: [] };
 let currentPairCandidates = [], rejectedPairs = new Set();
 let pendingAthletes = [], pendingMatches = [];
- 
+
 // ── Admin Mode ────────────────────────────────────────────────────
 let isAdmin = false;
- 
+
 function unlockAdmin() {
   if (isAdmin) {
     // Κλείδωμα — κρύβουμε τα admin tabs, επιστρέφουμε στη φόρμα
@@ -415,11 +415,11 @@ function unlockAdmin() {
     setTimeout(() => document.getElementById('admin-pwd-input').focus(), 100);
   }
 }
- 
+
 function closeAdminModal() {
   document.getElementById('admin-modal').classList.remove('open');
 }
- 
+
 function submitAdminPwd() {
   const pwd = document.getElementById('admin-pwd-input').value;
   if (pwd === 'fanis123') {
@@ -438,7 +438,7 @@ function submitAdminPwd() {
     document.getElementById('admin-pwd-input').focus();
   }
 }
- 
+
 // Βοηθητική — ανανεώνει τα κουμπιά στο matchmaking tab
 function _refreshPairUI() {
   const pairBtn = document.querySelector('#pair-btn-wrap button');
@@ -446,20 +446,20 @@ function _refreshPairUI() {
   if (pairBtn) pairBtn.style.display = isAdmin ? '' : 'none';
   if (pairMsg) pairMsg.style.display = isAdmin ? 'none' : '';
 }
- 
+
 // 3. Εκκίνηση εφαρμογής - Φορτώνει τα πάντα από το Cloud
 async function init() {
    try {
         const { data: athletes, error: aErr } = await _supabase.from('athletes').select('*');
         if (aErr) throw aErr;
         db.athletes = athletes || [];
- 
+
         const { data: matches, error: mErr } = await _supabase
             .from('matches')
             .select('*, athlete1:athlete1_id(*), athlete2:athlete2_id(*)');
         if (mErr) throw mErr;
         db.matches = matches || [];
- 
+
         console.log("Συγχρονισμός με Supabase επιτυχής!");
         renderAthletes();
         renderMatches();
@@ -468,7 +468,7 @@ async function init() {
         showAlert('reg-alert', 'Αποτυχία σύνδεσης με τη βάση δεδομένων.', 'error');
     }
 }
- 
+
 // 4. Εγγραφή Αθλητή στο Supabase
 async function registerAthlete() {
     const fields = {
@@ -481,7 +481,7 @@ async function registerAthlete() {
         sport: document.getElementById('f-sport').value,
         paired: false
     };
- 
+
     // Έλεγχος ότι τα string πεδία δεν είναι κενά και τα αριθμητικά είναι έγκυροι αριθμοί
     if (!fields.name || !fields.team || !fields.gender || !fields.sport) {
         showAlert('reg-alert', 'Συμπλήρωσε όλα τα πεδία!', 'error');
@@ -499,9 +499,9 @@ async function registerAthlete() {
         showAlert('reg-alert', 'Μη έγκυρος αριθμός αγώνων.', 'error');
         return;
     }
- 
+
     const { data, error } = await _supabase.from('athletes').insert([fields]).select();
- 
+
     if (error) {
         showAlert('reg-alert', 'Σφάλμα Cloud: ' + error.message, 'error');
     } else {
@@ -514,14 +514,14 @@ async function registerAthlete() {
         renderAthletes();
     }
 }
- 
+
 // 5. Διαγραφή Αθλητή από το Supabase
 async function deleteAthlete(id) {
     if (!confirm('Οριστική διαγραφή αθλητή;')) return;
- 
+
     // Διαγραφή από το Cloud
     const { error } = await _supabase.from('athletes').delete().eq('id', id);
- 
+
     if (error) {
         alert('Σφάλμα διαγραφής: ' + error.message);
     } else {
@@ -551,7 +551,7 @@ function closeEditModal(){document.getElementById('edit-modal').classList.remove
 async function saveEdit() {
     const a = db.athletes.find(x => x.id === editingId);
     if (!a) return;
- 
+
     const updated = {
         weight: parseFloat(document.getElementById('edit-weight').value),
         sport: document.getElementById('edit-sport').value,
@@ -559,9 +559,9 @@ async function saveEdit() {
         team: document.getElementById('edit-team').value.trim(),
         name: document.getElementById('edit-name').value.trim()
     };
- 
+
     const { error } = await _supabase.from('athletes').update(updated).eq('id', editingId);
- 
+
     if (error) {
         document.getElementById('edit-alert').innerHTML = `<div class="alert alert-error">Σφάλμα: ${error.message}</div>`;
     } else {
@@ -570,11 +570,11 @@ async function saveEdit() {
         renderAthletes();
     }
 }
- 
+
 // ── Matchmaking — Αλγόριθμος με Fallback ─────────────────────────
 // Αθλητές γεννημένοι <= 2008 θεωρούνται ενήλικες (18+) — ένα ενιαίο pool
 const ADULT_YEAR_CUTOFF = 2008;
- 
+
 // Βήματα χαλάρωσης κριτηρίων:
 // Βήμα 0 (Ιδανικό):    ±1 έτος, ±5 kg,  ±3  αγώνες
 // Βήμα 1 (Χαλάρωση Β1): ±1 έτος, ±7 kg,  ±5  αγώνες
@@ -585,9 +585,9 @@ const PAIRING_STEPS=[
   {ageDiff:1, weightDiff:7,  expDiff:5,  label:'step1', badgeClass:'fb-1',     badgeText:'Χαλάρωση Β1'},
   {ageDiff:2, weightDiff:10, expDiff:10, label:'step2', badgeClass:'fb-2',     badgeText:'Χαλάρωση Β2'},
 ];
- 
+
 function isAdult(a){ return a.year <= ADULT_YEAR_CUTOFF; }
- 
+
 // Αυστηρή σύγκριση ομάδας — αφαιρεί κενά, κεφαλαία, diacritics
 function sameTeam(t1, t2) {
   const normalize = t => (t || '').normalize('NFD')
@@ -597,7 +597,7 @@ function sameTeam(t1, t2) {
     .replace(/\s+/g, ' ');            // πολλαπλά κενά → ένα
   return normalize(t1) === normalize(t2);
 }
- 
+
 function scorePair(a,b){
   // Για ενήλικες: ηλικία έχει μικρή βαρύτητα — βάρος και αγώνες κυριαρχούν
   const agePen = (isAdult(a)&&isAdult(b)) ? Math.abs(a.year-b.year)*1 : Math.abs(a.year-b.year)*8;
@@ -605,7 +605,7 @@ function scorePair(a,b){
   const expPen = Math.abs(a.exp-b.exp)*1.5;
   return Math.max(0,Math.round(100-agePen-wtPen-expPen));
 }
- 
+
 function buildPairs(avail, step) {
     const { ageDiff, weightDiff, expDiff } = step;
     const sorted = [...avail].sort((a, b) => b.year - a.year);
@@ -647,13 +647,13 @@ function renderPairDisplay(a, b, sc, key, badgeClass, badgeText) {
   const wd = Math.abs(a.weight - b.weight).toFixed(1);
   const ad = Math.abs(a.year - b.year);
   const ed = Math.abs(a.exp - b.exp);
- 
+
   // Μετατροπή διαφορών σε ποσοστά % (0-100)
   const wp = Math.round(Math.max(0, 100 - Math.abs(a.weight - b.weight) * 8));
   const ap = Math.round(Math.max(0, 100 - ad * 30));
   const ep = Math.round(Math.max(0, 100 - ed * 10));
   const bothAdult = isAdult(a) && isAdult(b);
- 
+
   document.getElementById('pair-display').innerHTML = `
   <div class="match-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -698,10 +698,10 @@ function renderPairDisplay(a, b, sc, key, badgeClass, badgeText) {
 async function acceptPair(aid, bid) {
     const a = db.athletes.find(x => x.id === aid), b = db.athletes.find(x => x.id === bid);
     const dateStr = new Date().toLocaleDateString('el-GR');
- 
+
     const { data, error } = await _supabase.from('matches').insert([{ athlete1_id: aid, athlete2_id: bid, date: dateStr }]).select();
     if (error) { showAlert('mm-alert', 'Σφάλμα: ' + error.message, 'error'); return; }
- 
+
     await _supabase.from('athletes').update({ paired: true }).in('id', [aid, bid]);
     
     a.paired = true; b.paired = true;
@@ -711,7 +711,7 @@ async function acceptPair(aid, bid) {
     showAlert('mm-alert', `Αγώνας αποθηκεύτηκε!`, 'success');
     renderMatches();
 }
- 
+
 // ── Render ────────────────────────────────────────────────────────
 function renderAthletes(){
   const sport=document.getElementById('fil-sport').value,gender=document.getElementById('fil-gender').value;
@@ -751,19 +751,19 @@ function renderMatches() {
     if (sportName && sp[sportName] !== undefined) sp[sportName]++; 
     else if (sportName) sp[sportName] = 1; 
   });
- 
+
   document.getElementById('match-stats').innerHTML = `
     <div class="stat-card"><div class="num">${total}</div><div class="lbl">Συνολικοί Αγώνες</div></div>
     <div class="stat-card"><div class="num">${sp.BOX || 0}</div><div class="lbl">BOX</div></div>
     <div class="stat-card"><div class="num">${sp.Kickboxing || 0}</div><div class="lbl">Kickboxing</div></div>
     <div class="stat-card"><div class="num">${sp.MMA || 0}</div><div class="lbl">MMA</div></div>`;
- 
+
   const c = document.getElementById('matches-container');
   if (!total) {
     c.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><p>Δεν υπάρχουν επιβεβαιωμένοι αγώνες.</p></div>';
     return;
   }
- 
+
   c.innerHTML = `<table class="matches-table"><thead><tr>
     <th>#</th>
     <th style="color:#FADBD8">🔴 Κόκκινη Γωνία</th><th>Ομάδα</th><th>Έτος</th><th>Κιλά</th>
@@ -784,13 +784,13 @@ function renderMatches() {
     <td style="color:var(--text2);font-size:12px">${m.date}</td>
   </tr>`).join('')}</tbody></table>`;
 }
- 
+
 // ── Βοηθητική: έλεγχος αν αθλητής είναι ζευγαρωμένος
 // Το Supabase επιστρέφει boolean — αντιμετωπίζουμε και edge cases
 function isPaired(a) {
   return a.paired === true || a.paired === 'true';
 }
- 
+
 // ── Render Unpaired ───────────────────────────────────────────────
 function renderUnpaired() {
   // Strict φίλτρο: ΜΟΝΟ αθλητές με paired === false (ή null/undefined)
@@ -799,13 +799,13 @@ function renderUnpaired() {
   
   const countEl = document.getElementById('unpaired-count');
   if (countEl) countEl.textContent = total ? `${total} αθλητές χωρίς ζευγάρι` : '';
- 
+
   const c = document.getElementById('unpaired-container');
   if (!total) {
     c.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>Όλοι οι αθλητές έχουν ζευγαρωθεί!</p></div>';
     return;
   }
- 
+
   // Group by sport + gender
  const groups = {};
   unpaired.forEach(a => {
@@ -813,7 +813,7 @@ function renderUnpaired() {
     if (!groups[key]) groups[key] = { sport: a.sport, gender: a.gender, athletes: [] };
     groups[key].athletes.push(a);
   });
- 
+
   const parts = Object.values(groups).map(g => {
     const rows = g.athletes
       .sort((a, b) => a.year - b.year)
@@ -839,7 +839,7 @@ function renderUnpaired() {
         </table>
       </div>`;
   }).join('');
- 
+
   c.innerHTML = `
     <div class="alert alert-warning" style="margin-bottom:16px">
       ⚠ <strong>${total} αθλητές</strong> εκκρεμούν. Μπορείτε να τους ζευγαρώσετε από την καρτέλα "Ζευγαροποίηση".
@@ -852,10 +852,10 @@ function exportUnpairedXLS() {
     a.paired === false || a.paired === null || a.paired === undefined || a.paired === 'false'
   );
   if (!unpaired.length) { alert('Δεν υπάρχουν εκκρεμότητες για εξαγωγή.'); return; }
- 
+
   const today = new Date().toLocaleDateString('el-GR');
   const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
- 
+
   // Ομαδοποίηση ανά άθλημα + φύλο (ίδια λογική με renderUnpaired)
   const groups = {};
   unpaired.forEach(a => {
@@ -863,21 +863,21 @@ function exportUnpairedXLS() {
     if (!groups[key]) groups[key] = { sport: a.sport, gender: a.gender, athletes: [] };
     groups[key].athletes.push(a);
   });
- 
+
   // Χρώματα επικεφαλίδων ανά άθλημα
   const sportColor = { BOX: '#922B21', Kickboxing: '#1E8449', MMA: '#6C3483' };
   const genderLabel = g => g === 'Α' ? 'Άνδρες' : 'Γυναίκες';
- 
+
   let allRows = '';
   let grandTotal = 0;
- 
+
   Object.values(groups)
     .sort((a, b) => a.sport.localeCompare(b.sport) || a.gender.localeCompare(b.gender))
     .forEach(g => {
       const color = sportColor[g.sport] || '#1a1a2e';
       const sorted = g.athletes.sort((a, b) => a.weight - b.weight); // ταξινόμηση κατά κιλά
       grandTotal += sorted.length;
- 
+
       // Επικεφαλίδα ομάδας (π.χ. BOX — Άνδρες)
       allRows += `
         <tr>
@@ -894,7 +894,7 @@ function exportUnpairedXLS() {
           <th style="text-align:center">Αγώνες</th>
           <th style="background:#fffde7;text-align:center">Χειρόγραφο Ζευγάρι</th>
         </tr>`;
- 
+
       sorted.forEach((a, i) => {
         const bg = i % 2 === 0 ? '#ffffff' : '#f9f9f9';
         const adult = isAdult(a) ? ' <span style="font-size:10px;color:#1A5276">(18+)</span>' : '';
@@ -909,11 +909,11 @@ function exportUnpairedXLS() {
           <td style="background:#fffde7;border:1px dashed #ccc"></td>
         </tr>`;
       });
- 
+
       // Κενή γραμμή μεταξύ ομάδων
       allRows += `<tr><td colspan="7" style="height:12px;background:#fff;border:none"></td></tr>`;
     });
- 
+
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
     xmlns:x="urn:schemas-microsoft-com:office:excel"
     xmlns="http://www.w3.org/TR/REC-html40">
@@ -934,21 +934,21 @@ function exportUnpairedXLS() {
 <br>
 <table>${allRows}</table>
 </body></html>`;
- 
+
   const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'εκκρεμοτητες.xls'; a.click();
   URL.revokeObjectURL(url);
 }
- 
+
 // 1. Εξαγωγή Αθλητών σε CSV
 function exportAthletes() {
   if (!db.athletes.length) {
     alert('Δεν υπάρχουν αθλητές για εξαγωγή.');
     return;
   }
- 
+
   // Δημιουργία των γραμμών
   // Χρησιμοποιούμε το ; ως διαχωριστικό για καλύτερη συμβατότητα με το ελληνικό Excel
   const rows = db.athletes.map(a => [
@@ -962,25 +962,25 @@ function exportAthletes() {
     `"${a.sport}"`,
     a.paired ? '"Ζευγαρωμένος"' : '"Διαθέσιμος"'
   ].join(';'));
- 
+
   const header = 'ID;Ονοματεπώνυμο;Ομάδα;Φύλο;Κιλά;Έτος Γέννησης;Αγώνες;Άθλημα;Κατάσταση';
   const csvContent = [header, ...rows].join('\n');
- 
+
   dlCSV(csvContent, 'αθλητες.csv');
 }
- 
+
 // 2. Εξαγωγή Αγώνων σε CSV
 function exportMatches() {
   if (!db.matches.length) {
     alert('Δεν υπάρχουν αγώνες για εξαγωγή.');
     return;
   }
- 
+
   const rows = db.matches.map(m => {
     // Χρησιμοποιούμε ?. για ασφάλεια αν λείπει κάποιος αθλητής
     const a1 = m.athlete1 || { name: '---', team: '---', year: '---', weight: '---', gender: '---', sport: '---' };
     const a2 = m.athlete2 || { name: '---', team: '---', year: '---', weight: '---' };
- 
+
     return [
       m.id,
       `"${a1.name}"`,
@@ -996,13 +996,13 @@ function exportMatches() {
       `"${m.date}"`
     ].join(';');
   });
- 
+
   const header = '#;Αθλητής 1;Ομάδα 1;Έτος 1;Κιλά 1;Αθλητής 2;Ομάδα 2;Έτος 2;Κιλά 2;Άθλημα;Φύλο;Ημερομηνία';
   const csvContent = [header, ...rows].join('\n');
- 
+
   dlCSV(csvContent, 'αγωνες.csv');
 }
- 
+
 // 3. Η συνάρτηση λήψης (dlCSV) - Παραμένει ίδια αλλά σιγουρέψου ότι την έχεις
 function dlCSV(content, filename) {
   // Το '\uFEFF' βοηθάει το Excel να αναγνωρίσει τα ελληνικά (UTF-8 με BOM)
@@ -1014,17 +1014,17 @@ function dlCSV(content, filename) {
   a.click();
   URL.revokeObjectURL(url);
 }
- 
+
 // ── Export Excel (.xls) — Αγώνες ─────────────────────────────────
 function exportMatchesXLS() {
   if (!db.matches || db.matches.length === 0) {
     alert('Δεν υπάρχουν αγώνες για εξαγωγή.');
     return;
   }
- 
+
   const today = new Date().toLocaleDateString('el-GR');
   const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
- 
+
   const stylesXml = `<Styles>
     <Style ss:ID="h">
       <Font ss:Bold="1" ss:FontName="Calibri" ss:Size="11"/>
@@ -1051,15 +1051,15 @@ function exportMatchesXLS() {
       </Borders>
     </Style>
   </Styles>`;
- 
+
   // Επικεφαλίδες ακριβώς όπως το screenshot
   const headers = ['#','Αθλητής 1','Ομάδα 1','Έτος 1','Κιλά 1','Αθλητής 2','Ομάδα 2','Έτος 2','Κιλά 2','Άθλημα','Φύλο','Ημερομηνία'];
   const widths  = [35, 180, 120, 60, 55, 180, 120, 60, 55, 90, 50, 95];
- 
+
   const headerRow = headers.map(h =>
     `<Cell ss:StyleID="h"><Data ss:Type="String">${esc(h)}</Data></Cell>`
   ).join('');
- 
+
   const dataRows = db.matches.map((m, i) => {
     const a1 = m.athlete1 || {};
     const a2 = m.athlete2 || {};
@@ -1078,9 +1078,9 @@ function exportMatchesXLS() {
       <Cell ss:StyleID="cn"><Data ss:Type="String">${esc(m.date)}</Data></Cell>
     </Row>`;
   }).join('');
- 
+
   const colWidths = widths.map(w => `<Column ss:Width="${w}"/>`).join('');
- 
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -1101,14 +1101,14 @@ ${stylesXml}
     xmlns="urn:schemas-microsoft-com:office:excel"/>
 </Worksheet>
 </Workbook>`;
- 
+
   const blob = new Blob(['\uFEFF' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `αγωνες_${today.replace(/\//g,'-')}.xls`; a.click();
   URL.revokeObjectURL(url);
 }
- 
+
 // ── CSV Parser ────────────────────────────────────────────────────
 function detectDelimiter(text){
   const first=text.split('\n').find(l=>l.trim());
@@ -1132,7 +1132,7 @@ function parseCSV(text){
   const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
   return {rows:lines.map(l=>parseLine(l,delim)),delim};
 }
- 
+
 // ── Κανονικοποίηση ────────────────────────────────────────────────
 function normalizeGender(v){
   if(!v)return'';
@@ -1153,7 +1153,7 @@ function normalizeSport(v){
   if(v.trim().toLowerCase()==='kickboxing')return'Kickboxing';
   return'';
 }
- 
+
 // ── Αντιστοίχιση κεφαλίδων ───────────────────────────────────────
 const COL_MAPS={
   id:     ['ID'],
@@ -1167,10 +1167,10 @@ const COL_MAPS={
   sport:  ['ΑΘΛΗΜΑ','ΣΤΥΛ','SPORT','DISCIPLINE'],
   paired: ['ΚΑΤΑΣΤΑΣΗ','STATUS'],
 };
- 
+
 function mapHeaders(headerRow){
   const map={};
- 
+
   // clean(): αφαιρεί τόνους και κρατάει μόνο γράμματα+ψηφία+κενά, uppercase
   const clean=h=>{
     // Βήμα 1: NFD decomposition → αφαίρεση combining accents (τόνοι, διαλυτικά)
@@ -1179,7 +1179,7 @@ function mapHeaders(headerRow){
     // Χρησιμοποιούμε \p{L} αντί για hard-coded ranges ώστε να καλύπτει ΟΛΑ τα ελληνικά
     return noAccent.replace(/[^\p{L}\p{N} ]/gu,'').trim().toUpperCase();
   };
- 
+
   // Πέρασμα 1: ακριβής αντιστοίχιση
   headerRow.forEach((h,i)=>{
     const hc=clean(h);if(!hc)return;
@@ -1188,7 +1188,7 @@ function mapHeaders(headerRow){
       if(aliases.some(a=>hc===a)){map[field]=i;return;}
     }
   });
- 
+
   // Πέρασμα 2: includes fallback (μόνο για aliases > 3 χαρακτήρες)
   headerRow.forEach((h,i)=>{
     const hc=clean(h);if(!hc)return;
@@ -1197,13 +1197,13 @@ function mapHeaders(headerRow){
       if(aliases.some(a=>a.length>3&&hc.includes(a))){map[field]=i;}
     }
   });
- 
+
   return map;
 }
- 
+
 // ── Import Athletes ───────────────────────────────────────────────
 let parsedAthleteData=null;
- 
+
 function handleAthleteFile(input){
   const f=input.files[0];if(!f)return;
   document.getElementById('lbl-athletes').textContent='📄 '+f.name;
@@ -1233,12 +1233,12 @@ function handleAthleteFile(input){
   };
   r.readAsText(f,'UTF-8');
 }
- 
+
 async function importAthletes(){
   if(!pendingAthletes.length||!parsedAthleteData){showAlert('import-alert','Δεν έχεις επιλέξει αρχείο αθλητών.','error');return;}
   const {map}=parsedAthleteData;
   let added=0,skipped=0,errors=[];
- 
+
   for(const cols of pendingAthletes){
     const get=(field,def='')=>(map[field]!==undefined&&cols[map[field]]!==undefined)?cols[map[field]].trim():def;
     
@@ -1250,22 +1250,22 @@ async function importAthletes(){
     const exp=parseInt(get('exp')) || 0;
     const sport=normalizeSport(get('sport')) || 'BOX';
     const paired=get('paired')==='Ζευγαρωμένος'; // Αν το αρχείο λέει ήδη αν είναι ζευγαρωμένος
- 
+
     // Έλεγχος εγκυρότητας γραμμής
     if(!name || isNaN(weight) || isNaN(year)){
         skipped++; continue;
     }
- 
+
     // Έλεγχος αν υπάρχει ήδη τοπικά για να μην τον ξαναστείλουμε
     if(db.athletes.find(a=>a.name===name && a.team===team)){
         skipped++; continue;
     }
- 
+
     const athleteData = { name, team, gender, weight, year, exp, sport, paired };
- 
+
     // Αποστολή στο Supabase
     const { data, error } = await _supabase.from('athletes').insert([athleteData]).select();
- 
+
     if(error){
       errors.push(`${name}: ${error.message}`);
     } else {
@@ -1273,7 +1273,7 @@ async function importAthletes(){
       added++;
     }
   }
- 
+
   // Καθαρισμός UI
   pendingAthletes=[]; parsedAthleteData=null;
   document.getElementById('preview-athletes').innerHTML='';
@@ -1283,7 +1283,7 @@ async function importAthletes(){
   renderAthletes(); // Ανανέωση του πίνακα στην οθόνη
   showAlert('import-alert', `✓ Εισήχθησαν ${added} αθλητές στο Cloud.`, 'success');
 }
- 
+
 // ── Import Matches (CSV or XLS/SpreadsheetML) ─────────────────────
 function handleMatchFile(input){
   const f=input.files[0];if(!f)return;
@@ -1308,7 +1308,7 @@ function handleMatchFile(input){
   };
   r.readAsText(f,'UTF-8');
 }
- 
+
 // Parse SpreadsheetML (.xls) exported by this app
 // Expected column order (after header rows): #|Κόκκινη|Ομάδα1|Έτος1|Κιλά1|Μπλε|Ομάδα2|Έτος2|Κιλά2|Άθλημα|Φύλο|Ημερομηνία
 function parseXLSMatches(xml){
@@ -1335,38 +1335,38 @@ function parseXLSMatches(xml){
   }
   return rows;
 }
- 
+
 async function importMatches(){
   if(!pendingMatches.length){showAlert('import-alert','Δεν έχεις επιλέξει αρχείο αγώνων.','error');return;}
   if(!db.athletes.length){showAlert('import-alert','Εισάγαγε πρώτα τους αθλητές!','error');return;}
   
   let added=0,skipped=0;
- 
+
   for(const cols of pendingMatches){
     if(cols.length < 10) continue;
- 
+
     // Αντιστοίχιση στηλών βάσει του δικού μας export (0=#, 1=name1, 2=team1, 5=name2, 6=team2, 11=date)
     const n1=cols[1], t1=cols[2], n2=cols[5], t2=cols[6];
     const date=cols[11] || new Date().toLocaleDateString('el-GR');
- 
+
     // Εύρεση των αθλητών στη βάση μας (πρέπει να έχουν εισαχθεί ήδη οι αθλητές)
     const a1 = db.athletes.find(a => a.name === n1 && sameTeam(a.team, t1));
     const a2 = db.athletes.find(a => a.name === n2 && sameTeam(a.team, t2));
- 
+
     if(!a1 || !a2){
       skipped++; continue;
     }
- 
+
     // Έλεγχος αν ο αγώνας υπάρχει ήδη στη μνήμη
     if(db.matches.find(m => m.athlete1_id === a1.id && m.athlete2_id === a2.id)){
       skipped++; continue;
     }
- 
+
     // Αποστολή αγώνα στο Supabase
     const { data, error } = await _supabase.from('matches')
       .insert([{ athlete1_id: a1.id, athlete2_id: a2.id, date: date }])
       .select();
- 
+
     if(error){
       console.error("Σφάλμα εισαγωγής αγώνα:", error.message);
       skipped++;
@@ -1381,7 +1381,7 @@ async function importMatches(){
       added++;
     }
   }
- 
+
   pendingMatches=[];
   document.getElementById('preview-matches').innerHTML='';
   document.getElementById('lbl-matches').textContent='Κλικ ή σύρε το αρχείο εδώ';
@@ -1391,31 +1391,31 @@ async function importMatches(){
   renderAthletes();
   showAlert('import-alert', `✓ Εισήχθησαν ${added} αγώνες στο Cloud.`, 'success');
 }
- 
+
 // ── Reset ─────────────────────────────────────────────────────────
 function openResetModal(){document.getElementById('reset-modal').classList.add('open');}
 function closeResetModal(){document.getElementById('reset-modal').classList.remove('open');}
- 
+
 async function resetAll() {
     if (!confirm('ΠΡΟΣΟΧΗ: Θα διαγραφούν ΟΛΟΙ οι αθλητές και οι αγώνες από το Cloud!')) return;
- 
+
     closeResetModal();
- 
+
     try {
         // ΠΡΩΤΑ οι αγώνες (λόγω foreign key constraints)
         const { error: e1 } = await _supabase.from('matches').delete().gte('id', 0);
         if (e1) throw e1;
- 
+
         // ΜΕΤΑ οι αθλητές
         const { error: e2 } = await _supabase.from('athletes').delete().gte('id', 0);
         if (e2) throw e2;
- 
+
         // Καθαρισμός τοπικής μνήμης χωρίς reload
         db.athletes = [];
         db.matches  = [];
         currentPairCandidates = [];
         rejectedPairs = new Set();
- 
+
         // Ανανέωση UI
         renderAthletes();
         renderMatches();
@@ -1423,7 +1423,7 @@ async function resetAll() {
         document.getElementById('pair-display').innerHTML = '';
         switchTab('register');
         showAlert('reg-alert', 'Το τουρνουά μηδενίστηκε. Μπορείς να ξεκινήσεις νέες εγγραφές!', 'success');
- 
+
     } catch (err) {
         console.error("Σφάλμα reset:", err.message);
         showAlert('reg-alert', 'Αποτυχία μηδενισμού: ' + err.message, 'error');
@@ -1443,7 +1443,7 @@ function switchTab(t) {
   if (t === 'matches')     renderMatches();
   if (t === 'unpaired')    renderUnpaired();
 }
- 
+
 // ── showAlert ─────────────────────────────────────────────────────
 // Εμφάνιση μηνύματος σε συγκεκριμένο container — λείπε εντελώς
 function showAlert(id, msg, type = 'info') {
@@ -1453,7 +1453,7 @@ function showAlert(id, msg, type = 'info') {
   el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
   if (type === 'success') setTimeout(() => { if(el) el.innerHTML = ''; }, 5000);
 }
- 
+
 // ── rejectPair ────────────────────────────────────────────────────
 // Απόρριψη ζευγαριού και εμφάνιση επόμενης πρότασης — λείπε εντελώς
 function rejectPair(key) {
@@ -1474,7 +1474,7 @@ function rejectPair(key) {
     document.getElementById('pair-display').innerHTML = '';
   }
 }
- 
+
 // ── Εκκίνηση ─────────────────────────────────────────────────────
 init();
 </script>
