@@ -25,7 +25,8 @@ body{font-family:'Barlow',sans-serif;font-size:15px;color:var(--text);background
 .subtitle{font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
 .tabs{display:flex;background:var(--darker);padding:0 28px;flex-wrap:wrap}
 .tab{padding:13px 20px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px;user-select:none}
-.tab.active{color:#fff;border-bottom-color:var(--gold)}
+.tab.admin-only { display: none; }
+.tab.admin-only.visible { display: block; }
 .tab:hover:not(.active){color:rgba(255,255,255,0.8)}
 .content{padding:28px;background:var(--surface2)}
 .panel{display:none}.panel.active{display:block}
@@ -136,11 +137,11 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
  
   <div class="tabs">
     <div class="tab active" onclick="switchTab('register')">Εγγραφή Αθλητή</div>
-    <div class="tab" onclick="switchTab('athletes')">Αθλητές</div>
-    <div class="tab" onclick="switchTab('matchmaking')">Ζευγαροποίηση</div>
-    <div class="tab" onclick="switchTab('matches')">Αγώνες</div>
-    <div class="tab" onclick="switchTab('unpaired')">⚠ Εκκρεμότητες</div>
-    <div class="tab" onclick="switchTab('import')">📥 Εισαγωγή Δεδομένων</div>
+    <div class="tab admin-only" onclick="switchTab('athletes')">Αθλητές</div>
+    <div class="tab admin-only" onclick="switchTab('matchmaking')">Ζευγαροποίηση</div>
+    <div class="tab admin-only" onclick="switchTab('matches')">Αγώνες</div>
+    <div class="tab admin-only" onclick="switchTab('unpaired')">⚠ Εκκρεμότητες</div>
+    <div class="tab admin-only" onclick="switchTab('import')">📥 Εισαγωγή Δεδομένων</div>
   </div>
  
   <div class="content">
@@ -240,7 +241,10 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     <div id="tab-unpaired" class="panel">
       <div class="section-header">
         <div class="section-title">Εκκρεμότητες / Διαθέσιμοι Αθλητές</div>
-        <span id="unpaired-count" style="font-size:13px;color:var(--text2)"></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="unpaired-count" style="font-size:13px;color:var(--text2)"></span>
+          <button class="btn btn-success btn-sm" onclick="exportUnpairedXLS()">⬇ Εξαγωγή Excel (.xls)</button>
+        </div>
       </div>
       <div id="unpaired-alert"></div>
       <div id="unpaired-container"></div>
@@ -394,11 +398,13 @@ let isAdmin = false;
  
 function unlockAdmin() {
   if (isAdmin) {
-    // Κλείδωμα admin
+    // Κλείδωμα — κρύβουμε τα admin tabs, επιστρέφουμε στη φόρμα
     isAdmin = false;
     document.getElementById('btn-lock').textContent = '🔒';
     document.getElementById('btn-lock').title = 'Είσοδος Διαχειριστή';
     document.getElementById('btn-reset').style.display = 'none';
+    document.querySelectorAll('.tab.admin-only').forEach(t => t.classList.remove('visible'));
+    switchTab('register');
     renderAthletes();
     _refreshPairUI();
   } else {
@@ -422,6 +428,8 @@ function submitAdminPwd() {
     document.getElementById('btn-lock').textContent = '🔓';
     document.getElementById('btn-lock').title = 'Admin Mode Ενεργός — Κλικ για κλείδωμα';
     document.getElementById('btn-reset').style.display = '';
+    // Εμφάνιση όλων των admin-only tabs
+    document.querySelectorAll('.tab.admin-only').forEach(t => t.classList.add('visible'));
     renderAthletes();
     _refreshPairUI();
   } else {
@@ -567,14 +575,28 @@ async function saveEdit() {
 // Αθλητές γεννημένοι <= 2008 θεωρούνται ενήλικες (18+) — ένα ενιαίο pool
 const ADULT_YEAR_CUTOFF = 2008;
  
+// Βήματα χαλάρωσης κριτηρίων:
+// Βήμα 0 (Ιδανικό):    ±1 έτος, ±5 kg,  ±3  αγώνες
+// Βήμα 1 (Χαλάρωση Β1): ±1 έτος, ±7 kg,  ±5  αγώνες
+// Βήμα 2 (Χαλάρωση Β2): ±2 έτη,  ±10 kg, ±10 αγώνες  ← max όριο κιλών & αγώνων
+// Ομάδα: ΑΠΑΡΑΒΑΤΟ σε ΟΛΑ τα βήματα — ποτέ ίδια ομάδα
 const PAIRING_STEPS=[
   {ageDiff:1, weightDiff:5,  expDiff:3,  label:'ideal', badgeClass:'fb-ideal', badgeText:'Ιδανικό'},
-  {ageDiff:1, weightDiff:7,  expDiff:5,  label:'step1',  badgeClass:'fb-1',     badgeText:'Χαλάρωση Β1'},
-  {ageDiff:2, weightDiff:7,  expDiff:5,  label:'step2',  badgeClass:'fb-2',     badgeText:'Χαλάρωση Β2'},
+  {ageDiff:1, weightDiff:7,  expDiff:5,  label:'step1', badgeClass:'fb-1',     badgeText:'Χαλάρωση Β1'},
+  {ageDiff:2, weightDiff:10, expDiff:10, label:'step2', badgeClass:'fb-2',     badgeText:'Χαλάρωση Β2'},
 ];
  
 function isAdult(a){ return a.year <= ADULT_YEAR_CUTOFF; }
-function sameTeam(t1, t2) { return (t1 || '').trim().toUpperCase() === (t2 || '').trim().toUpperCase(); }
+ 
+// Αυστηρή σύγκριση ομάδας — αφαιρεί κενά, κεφαλαία, diacritics
+function sameTeam(t1, t2) {
+  const normalize = t => (t || '').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')  // αφαίρεση τόνων
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, ' ');            // πολλαπλά κενά → ένα
+  return normalize(t1) === normalize(t2);
+}
  
 function scorePair(a,b){
   // Για ενήλικες: ηλικία έχει μικρή βαρύτητα — βάρος και αγώνες κυριαρχούν
@@ -593,11 +615,15 @@ function buildPairs(avail, step) {
             const a = sorted[i], b = sorted[j];
             const key = [a.id, b.id].sort().join('-');
             if (rejectedPairs.has(key)) continue;
-            // Hard constraints: ίδιο φύλο, ίδιο άθλημα, διαφορετική ομάδα
-            if (a.gender !== b.gender || a.sport !== b.sport || sameTeam(a.team, b.team)) continue;
+            // ── Hard constraints (ΑΠΑΡΑΒΑΤΑ — ισχύουν σε ΟΛΑ τα βήματα) ──
+            if (a.gender !== b.gender) continue;   // ίδιο φύλο
+            if (a.sport  !== b.sport)  continue;   // ίδιο άθλημα
+            if (sameTeam(a.team, b.team)) continue; // διαφορετική ομάδα (αυστηρό)
+            // ── Soft constraints (χαλαρώνουν ανά βήμα) ──
             const bothAdults = isAdult(a) && isAdult(b);
             if (!bothAdults && Math.abs(a.year - b.year) > ageDiff) continue;
-            if (Math.abs(a.weight - b.weight) > weightDiff || Math.abs(a.exp - b.exp) > expDiff) continue;
+            if (Math.abs(a.weight - b.weight) > weightDiff) continue;
+            if (Math.abs(a.exp - b.exp) > expDiff) continue;
             pairs.push({ a, b, score: scorePair(a, b), key, step: step.label, badgeClass: step.badgeClass, badgeText: step.badgeText });
         }
     }
@@ -820,6 +846,102 @@ function renderUnpaired() {
     </div>
     ${parts}`;
 }
+// ── Εξαγωγή Εκκρεμοτήτων σε XLS ─────────────────────────────────
+function exportUnpairedXLS() {
+  const unpaired = db.athletes.filter(a =>
+    a.paired === false || a.paired === null || a.paired === undefined || a.paired === 'false'
+  );
+  if (!unpaired.length) { alert('Δεν υπάρχουν εκκρεμότητες για εξαγωγή.'); return; }
+ 
+  const today = new Date().toLocaleDateString('el-GR');
+  const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ 
+  // Ομαδοποίηση ανά άθλημα + φύλο (ίδια λογική με renderUnpaired)
+  const groups = {};
+  unpaired.forEach(a => {
+    const key = `${a.sport}|${a.gender}`;
+    if (!groups[key]) groups[key] = { sport: a.sport, gender: a.gender, athletes: [] };
+    groups[key].athletes.push(a);
+  });
+ 
+  // Χρώματα επικεφαλίδων ανά άθλημα
+  const sportColor = { BOX: '#922B21', Kickboxing: '#1E8449', MMA: '#6C3483' };
+  const genderLabel = g => g === 'Α' ? 'Άνδρες' : 'Γυναίκες';
+ 
+  let allRows = '';
+  let grandTotal = 0;
+ 
+  Object.values(groups)
+    .sort((a, b) => a.sport.localeCompare(b.sport) || a.gender.localeCompare(b.gender))
+    .forEach(g => {
+      const color = sportColor[g.sport] || '#1a1a2e';
+      const sorted = g.athletes.sort((a, b) => a.weight - b.weight); // ταξινόμηση κατά κιλά
+      grandTotal += sorted.length;
+ 
+      // Επικεφαλίδα ομάδας (π.χ. BOX — Άνδρες)
+      allRows += `
+        <tr>
+          <td colspan="7" style="background:${color};color:#fff;font-weight:bold;font-size:13px;padding:8px 10px;letter-spacing:1px">
+            ${esc(g.sport)} — ${genderLabel(g.gender)} &nbsp;(${sorted.length} αθλητές)
+          </td>
+        </tr>
+        <tr style="background:#f0f0f0">
+          <th style="text-align:center">#</th>
+          <th>Ονοματεπώνυμο</th>
+          <th>Ομάδα</th>
+          <th style="text-align:center">Έτος</th>
+          <th style="text-align:center">Κιλά</th>
+          <th style="text-align:center">Αγώνες</th>
+          <th style="background:#fffde7;text-align:center">Χειρόγραφο Ζευγάρι</th>
+        </tr>`;
+ 
+      sorted.forEach((a, i) => {
+        const bg = i % 2 === 0 ? '#ffffff' : '#f9f9f9';
+        const adult = isAdult(a) ? ' <span style="font-size:10px;color:#1A5276">(18+)</span>' : '';
+        allRows += `
+        <tr style="background:${bg}">
+          <td style="text-align:center;color:#888">${i + 1}</td>
+          <td style="font-weight:bold">${esc(a.name)}</td>
+          <td>${esc(a.team)}</td>
+          <td style="text-align:center">${a.year}${adult}</td>
+          <td style="text-align:center">${a.weight} kg</td>
+          <td style="text-align:center">${a.exp}</td>
+          <td style="background:#fffde7;border:1px dashed #ccc"></td>
+        </tr>`;
+      });
+ 
+      // Κενή γραμμή μεταξύ ομάδων
+      allRows += `<tr><td colspan="7" style="height:12px;background:#fff;border:none"></td></tr>`;
+    });
+ 
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+    xmlns:x="urn:schemas-microsoft-com:office:excel"
+    xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #ddd; padding: 6px 10px; font-size: 12px; }
+  th { font-weight: bold; }
+</style>
+</head>
+<body>
+<h2 style="color:#1a1a2e;font-family:Arial">ΕΚΚΡΕΜΟΤΗΤΕΣ ΤΟΥΡΝΟΥΑ — ${esc(today)}</h2>
+<p style="color:#666;font-size:12px;font-family:Arial">
+  Σύνολο αζευγάρωτων αθλητών: <strong>${grandTotal}</strong> &nbsp;|&nbsp;
+  Η στήλη "Χειρόγραφο Ζευγάρι" είναι κενή για χειρόγραφη συμπλήρωση
+</p>
+<br>
+<table>${allRows}</table>
+</body></html>`;
+ 
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'εκκρεμοτητες.xls'; a.click();
+  URL.revokeObjectURL(url);
+}
+ 
 // 1. Εξαγωγή Αθλητών σε CSV
 function exportAthletes() {
   if (!db.athletes.length) {
@@ -893,133 +1015,98 @@ function dlCSV(content, filename) {
   URL.revokeObjectURL(url);
 }
  
-// ── Export Excel (.xls) ───────────────────────────────────────────
+// ── Export Excel (.xls) — Αγώνες ─────────────────────────────────
 function exportMatchesXLS() {
   if (!db.matches || db.matches.length === 0) {
     alert('Δεν υπάρχουν αγώνες για εξαγωγή.');
     return;
   }
  
-  // 1. Ορισμός των Styles (Μία φορά, σωστά)
-  const stylesXml = `
-  <Styles>
-    <Style ss:ID="Default" ss:Name="Normal">
-      <Alignment ss:Vertical="Bottom"/>
-      <Borders/>
-      <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+  const today = new Date().toLocaleDateString('el-GR');
+  const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+ 
+  const stylesXml = `<Styles>
+    <Style ss:ID="h">
+      <Font ss:Bold="1" ss:FontName="Calibri" ss:Size="11"/>
+      <Interior ss:Color="#1F4E79" ss:Pattern="Solid"/>
+      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Calibri" ss:Size="11"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+      </Borders>
     </Style>
-    <Style ss:ID="header_red"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#922B21" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
-    <Style ss:ID="header_blue"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1A5276" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
-    <Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1a1a2e" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>
-    <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14"/></Style>
-    <Style ss:ID="subtitle"><Font ss:Italic="1" ss:Color="#666666"/></Style>
-    <Style ss:ID="odd"><Interior ss:Color="#F9F9F9" ss:Pattern="Solid"/></Style>
-    <Style ss:ID="even"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/></Style>
-    <Style ss:ID="odd_red"><Interior ss:Color="#FDF3F3" ss:Pattern="Solid"/><Font ss:Bold="1"/><Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#C0392B"/></Borders></Style>
-    <Style ss:ID="even_red"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Font ss:Bold="1"/><Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#C0392B"/></Borders></Style>
-    <Style ss:ID="odd_blue"><Interior ss:Color="#F3F8FD" ss:Pattern="Solid"/><Font ss:Bold="1"/><Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1A5276"/></Borders></Style>
-    <Style ss:ID="even_blue"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Font ss:Bold="1"/><Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#1A5276"/></Borders></Style>
-    <Style ss:ID="num"><Alignment ss:Horizontal="Center"/></Style>
+    <Style ss:ID="c">
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="cn">
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+      <Alignment ss:Horizontal="Center"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+      </Borders>
+    </Style>
   </Styles>`;
  
-  // 2. Υπολογισμός στατιστικών (με σωστά ονόματα για το template)
-  const total = db.matches.length;
-  const byBOX = db.matches.filter(m => m.athlete1?.sport === 'BOX').length;
-  const byKIK = db.matches.filter(m => m.athlete1?.sport === 'Kickboxing').length;
-  const byMMA = db.matches.filter(m => m.athlete1?.sport === 'MMA').length;
+  // Επικεφαλίδες ακριβώς όπως το screenshot
+  const headers = ['#','Αθλητής 1','Ομάδα 1','Έτος 1','Κιλά 1','Αθλητής 2','Ομάδα 2','Έτος 2','Κιλά 2','Άθλημα','Φύλο','Ημερομηνία'];
+  const widths  = [35, 180, 120, 60, 55, 180, 120, 60, 55, 90, 50, 95];
  
-  //-------------------
-  const today = new Date().toLocaleDateString('el-GR');
-  const esc = s => s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
- 
- 
-  const headerRowContent = `
-      <Cell ss:StyleID="header"><Data ss:Type="String">#</Data></Cell>
-      <Cell ss:StyleID="header_red"><Data ss:Type="String">Κόκκινη Γωνία</Data></Cell>
-      <Cell ss:StyleID="header_red"><Data ss:Type="String">Ομάδα 1</Data></Cell>
-      <Cell ss:StyleID="header_red"><Data ss:Type="String">Έτος 1</Data></Cell>
-      <Cell ss:StyleID="header_red"><Data ss:Type="String">Κιλά 1</Data></Cell>
-      <Cell ss:StyleID="header_blue"><Data ss:Type="String">Μπλε Γωνία</Data></Cell>
-      <Cell ss:StyleID="header_blue"><Data ss:Type="String">Ομάδα 2</Data></Cell>
-      <Cell ss:StyleID="header_blue"><Data ss:Type="String">Έτος 2</Data></Cell>
-      <Cell ss:StyleID="header_blue"><Data ss:Type="String">Κιλά 2</Data></Cell>
-      <Cell ss:StyleID="header"><Data ss:Type="String">Άθλημα</Data></Cell>
-      <Cell ss:StyleID="header"><Data ss:Type="String">Ημερομηνία</Data></Cell>`;
+  const headerRow = headers.map(h =>
+    `<Cell ss:StyleID="h"><Data ss:Type="String">${esc(h)}</Data></Cell>`
+  ).join('');
  
   const dataRows = db.matches.map((m, i) => {
-    const st = i % 2 === 0 ? 'odd' : 'even';
     const a1 = m.athlete1 || {};
     const a2 = m.athlete2 || {};
-    return `
-    <Row ss:Height="20">
-      <Cell ss:StyleID="num"><Data ss:Type="Number">${i + 1}</Data></Cell>
-      <Cell ss:StyleID="${st}_red"><Data ss:Type="String">${esc(a1.name)}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(a1.team)}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a1.year || 0}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a1.weight || 0}</Data></Cell>
-      <Cell ss:StyleID="${st}_blue"><Data ss:Type="String">${esc(a2.name)}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(a2.team)}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a2.year || 0}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="Number">${a2.weight || 0}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(a1.sport)}</Data></Cell>
-      <Cell ss:StyleID="${st}"><Data ss:Type="String">${esc(m.date)}</Data></Cell>
+    return `<Row ss:Height="18">
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${i + 1}</Data></Cell>
+      <Cell ss:StyleID="c"><Data ss:Type="String">${esc(a1.name)}</Data></Cell>
+      <Cell ss:StyleID="c"><Data ss:Type="String">${esc(a1.team)}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${a1.year || ''}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${a1.weight || ''}</Data></Cell>
+      <Cell ss:StyleID="c"><Data ss:Type="String">${esc(a2.name)}</Data></Cell>
+      <Cell ss:StyleID="c"><Data ss:Type="String">${esc(a2.team)}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${a2.year || ''}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${a2.weight || ''}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="String">${esc(a1.sport)}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="String">${esc(a1.gender)}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="String">${esc(m.date)}</Data></Cell>
     </Row>`;
   }).join('');
+ 
+  const colWidths = widths.map(w => `<Column ss:Width="${w}"/>`).join('');
  
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:x="urn:schemas-microsoft-com:office:excel">
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:o="urn:schemas-microsoft-com:office:office">
 <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-  <Title>Αγώνες Τουρνουά</Title>
-  <Author>Tournament Manager</Author>
-  <Created>${new Date().toISOString()}</Created>
+  <Title>Αγώνες Τουρνουά</Title><Author>Tournament Manager</Author>
 </DocumentProperties>
 ${stylesXml}
-  <Worksheet ss:Name="αγωνες">
-    <Table ss:DefaultRowHeight="20">
-      <Column ss:Width="35"/><Column ss:Width="175"/><Column ss:Width="110"/>
-      <Column ss:Width="60"/><Column ss:Width="55"/><Column ss:Width="175"/>
-      <Column ss:Width="110"/><Column ss:Width="60"/><Column ss:Width="55"/>
-      <Column ss:Width="90"/><Column ss:Width="45"/><Column ss:Width="90"/>
-      
-      <Row ss:Height="25">
-        <Cell ss:StyleID="title" ss:MergeAcross="10">
-          <Data ss:Type="String">ΛΙΣΤΑ ΑΓΩΝΩΝ ΤΟΥΡΝΟΥΑ — ${esc(today)}</Data>
-        </Cell>
-      </Row>
-      
-      <Row ss:Height="20">
-        <Cell ss:StyleID="subtitle" ss:MergeAcross="10">
-          <Data ss:Type="String">Σύνολο: ${total} αγώνες  |  BOX: ${byBOX}  |  Kickboxing: ${byKIK}  |  MMA: ${byMMA}</Data>
-        </Cell>
-      </Row>
-      
-      <Row ss:Height="6"><Cell ss:MergeAcross="10"><Data ss:Type="String"></Data></Cell></Row>
-      
-      <Row ss:Height="26">${headerRowContent}</Row>
-      
-      ${dataRows}
-    </Table>
-    
-    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
-      <FreezePanes/><FrozenNoSplit/>
-      <SplitHorizontal>4</SplitHorizontal>
-      <TopRowBottomPane>4</TopRowBottomPane>
-      <ActivePane>2</ActivePane>
-    </WorksheetOptions>
-  </Worksheet>
+<Worksheet ss:Name="αγωνες">
+  <Table ss:DefaultRowHeight="18">
+    ${colWidths}
+    <Row ss:Height="20">${headerRow}</Row>
+    ${dataRows}
+  </Table>
+  <AutoFilter x:Range="R1C1:R1C${headers.length}"
+    xmlns="urn:schemas-microsoft-com:office:excel"/>
+</Worksheet>
 </Workbook>`;
+ 
   const blob = new Blob(['\uFEFF' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `αγωνες_${today.replace(/\//g, '-')}.xls`;
-    document.body.appendChild(a); // Καλό είναι να το προσθέτεις στο body πριν το click
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `αγωνες_${today.replace(/\//g,'-')}.xls`; a.click();
+  URL.revokeObjectURL(url);
 }
  
 // ── CSV Parser ────────────────────────────────────────────────────
