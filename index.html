@@ -197,6 +197,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     <div id="tab-athletes" class="panel">
       <div class="section-header">
         <div class="section-title">Λίστα Αθλητών</div>
+        <button class="btn btn-success btn-sm" onclick="exportAthletesXLS()">⬇ Εξαγωγή Excel (.xls)</button>
       </div>
       <div class="filter-row">
         <select id="fil-sport" onchange="renderAthletes()">
@@ -954,6 +955,91 @@ function exportUnpairedXLS() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'εκκρεμοτητες.xls'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Εξαγωγή Αθλητών σε XLS ───────────────────────────────────────
+function exportAthletesXLS() {
+  if (!db.athletes.length) { alert('Δεν υπάρχουν αθλητές για εξαγωγή.'); return; }
+
+  const today = new Date().toLocaleDateString('el-GR');
+  const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const stylesXml = `<Styles>
+    <Style ss:ID="h">
+      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Calibri" ss:Size="11"/>
+      <Interior ss:Color="#1F4E79" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="c">
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="cn">
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+      <Alignment ss:Horizontal="Center"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D9D9"/>
+      </Borders>
+    </Style>
+  </Styles>`;
+
+  const headers  = ['#','Ονοματεπώνυμο','Ομάδα','Φύλο','Κιλά','Έτος Γέννησης','Αγώνες','Άθλημα','Κατάσταση'];
+  const widths   = [35, 200, 130, 60, 60, 100, 70, 90, 110];
+
+  const headerRow = headers.map(h =>
+    `<Cell ss:StyleID="h"><Data ss:Type="String">${esc(h)}</Data></Cell>`
+  ).join('');
+
+  const dataRows = db.athletes.map((a, i) => {
+    const status = isPaired(a) ? 'Ζευγαρωμένος' : 'Διαθέσιμος';
+    return `<Row ss:Height="18">
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${i + 1}</Data></Cell>
+      <Cell ss:StyleID="c"><Data ss:Type="String">${esc(a.name)}</Data></Cell>
+      <Cell ss:StyleID="c"><Data ss:Type="String">${esc(a.team)}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="String">${esc(a.gender)}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${a.weight || ''}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${a.year || ''}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="Number">${a.exp ?? 0}</Data></Cell>
+      <Cell ss:StyleID="cn"><Data ss:Type="String">${esc(a.sport)}</Data></Cell>
+      <Cell ss:StyleID="c"><Data ss:Type="String">${esc(status)}</Data></Cell>
+    </Row>`;
+  }).join('');
+
+  const colWidths = widths.map(w => `<Column ss:Width="${w}"/>`).join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:o="urn:schemas-microsoft-com:office:office">
+<DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Title>Λίστα Αθλητών</Title><Author>Tournament Manager</Author>
+</DocumentProperties>
+${stylesXml}
+<Worksheet ss:Name="αθλητες">
+  <Table ss:DefaultRowHeight="18">
+    ${colWidths}
+    <Row ss:Height="20">${headerRow}</Row>
+    ${dataRows}
+  </Table>
+  <AutoFilter x:Range="R1C1:R1C${headers.length}"
+    xmlns="urn:schemas-microsoft-com:office:excel"/>
+</Worksheet>
+</Workbook>`;
+
+  const blob = new Blob(['\uFEFF' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `αθλητες_${today.replace(/\//g,'-')}.xls`; a.click();
   URL.revokeObjectURL(url);
 }
 
