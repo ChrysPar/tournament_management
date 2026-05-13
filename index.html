@@ -588,75 +588,121 @@ async function saveEdit() {
 }
 
 // ── Matchmaking — Αλγόριθμος με Fallback ─────────────────────────
-// Αθλητές γεννημένοι <= 2008 θεωρούνται ενήλικες (18+) — ένα ενιαίο pool
-const ADULT_YEAR_CUTOFF = 2008;
+const ADULT_YEAR_CUTOFF  = 2008;  // γεννημένοι <= 2008 → 18+
+const HEAVY_WEIGHT_LIMIT = 90;    // 90kg+ → heavy category (κιλά & ηλικία αγνοούνται)
 
-// Βήματα χαλάρωσης κριτηρίων:
-// Βήμα 0 (Ιδανικό):    ±1 έτος, ±5 kg,  ±3  αγώνες
-// Βήμα 1 (Χαλάρωση Β1): ±1 έτος, ±7 kg,  ±5  αγώνες
-// Βήμα 2 (Χαλάρωση Β2): ±2 έτη,  ±10 kg, ±10 αγώνες  ← max όριο κιλών & αγώνων
-// Ομάδα: ΑΠΑΡΑΒΑΤΟ σε ΟΛΑ τα βήματα — ποτέ ίδια ομάδα
-const PAIRING_STEPS=[
-  {ageDiff:1, weightDiff:5,  expDiff:3,  label:'ideal', badgeClass:'fb-ideal', badgeText:'Ιδανικό'},
-  {ageDiff:1, weightDiff:7,  expDiff:5,  label:'step1', badgeClass:'fb-1',     badgeText:'Χαλάρωση Β1'},
-  {ageDiff:2, weightDiff:10, expDiff:10, label:'step2', badgeClass:'fb-2',     badgeText:'Χαλάρωση Β2'},
+/*
+  Κατηγορία Βαρέων (>= 90kg):
+    • Κιλά    : δεν μετράει (ο αθλητής παίζει με οποιονδήποτε βαρύ)
+    • Ηλικία  : δεν μετράει (συνήθως 18+)
+    • Μόνο κριτήριο: Εμπειρία αγώνων (±expDiff)
+
+  Κανονικές κατηγορίες — 4 βήματα χαλάρωσης:
+    Βήμα 0 — Ιδανικό   : ±1 έτος, ±5 kg,  ±3  αγώνες
+    Βήμα 1 — Χαλάρωση Α: ±1 έτος, ±8 kg,  ±6  αγώνες
+    Βήμα 2 — Χαλάρωση Β: ±2 έτη,  ±12 kg, ±10 αγώνες
+    Βήμα 3 — Μέγιστο   : ±3 έτη,  ±18 kg, ±15 αγώνες  ← τελευταία εναλλακτική
+
+  Hard constraints (ΑΠΑΡΑΒΑΤΑ παντού):
+    • Ίδιο φύλο
+    • Ίδιο άθλημα
+    • Διαφορετική ομάδα
+*/
+
+const PAIRING_STEPS = [
+  { ageDiff:1, weightDiff:5,  expDiff:3,  badgeClass:'fb-ideal', badgeText:'Ιδανικό'    },
+  { ageDiff:1, weightDiff:8,  expDiff:6,  badgeClass:'fb-1',     badgeText:'Χαλάρωση Α' },
+  { ageDiff:2, weightDiff:12, expDiff:10, badgeClass:'fb-1',     badgeText:'Χαλάρωση Β' },
+  { ageDiff:3, weightDiff:18, expDiff:15, badgeClass:'fb-2',     badgeText:'Μέγιστο'    },
 ];
 
-function isAdult(a){ return a.year <= ADULT_YEAR_CUTOFF; }
+// Βαρέα κιλά — ισχύει αν ΑΜΦΟΤΕΡΟΙ είναι >= 90kg
+function isHeavy(a) { return (a.weight || 0) >= HEAVY_WEIGHT_LIMIT; }
+function bothHeavy(a, b) { return isHeavy(a) && isHeavy(b); }
 
-// Αυστηρή σύγκριση ομάδας — αφαιρεί κενά, κεφαλαία, diacritics
+function isAdult(a) { return a.year <= ADULT_YEAR_CUTOFF; }
+
+// Αυστηρή σύγκριση ομάδας — αγνοεί τόνους, κεφαλαία, κενά
 function sameTeam(t1, t2) {
-  const normalize = t => (t || '').normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')  // αφαίρεση τόνων
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, ' ');            // πολλαπλά κενά → ένα
-  return normalize(t1) === normalize(t2);
+  const norm = t => (t || '').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/\s+/g,' ');
+  return norm(t1) === norm(t2);
 }
 
-function scorePair(a,b){
-  // Για ενήλικες: ηλικία έχει μικρή βαρύτητα — βάρος και αγώνες κυριαρχούν
-  const agePen = (isAdult(a)&&isAdult(b)) ? Math.abs(a.year-b.year)*1 : Math.abs(a.year-b.year)*8;
-  const wtPen  = Math.abs(a.weight-b.weight)*3;
-  const expPen = Math.abs(a.exp-b.exp)*1.5;
-  return Math.max(0,Math.round(100-agePen-wtPen-expPen));
+// Σκορ συμβατότητας — βαρέα κιλά: μόνο εμπειρία μετράει
+function scorePair(a, b) {
+  if (bothHeavy(a, b)) {
+    // Μόνο εμπειρία — ιδανικό σκορ = ελάχιστη διαφορά αγώνων
+    return Math.max(0, Math.round(100 - Math.abs(a.exp - b.exp) * 5));
+  }
+  const agePen = (isAdult(a) && isAdult(b))
+    ? Math.abs(a.year - b.year) * 1
+    : Math.abs(a.year - b.year) * 8;
+  const wtPen  = Math.abs(a.weight - b.weight) * 3;
+  const expPen = Math.abs(a.exp - b.exp) * 1.5;
+  return Math.max(0, Math.round(100 - agePen - wtPen - expPen));
 }
 
 function buildPairs(avail, step) {
-    const { ageDiff, weightDiff, expDiff } = step;
-    const sorted = [...avail].sort((a, b) => b.year - a.year);
-    const pairs = [];
-    for (let i = 0; i < sorted.length; i++) {
-        for (let j = i + 1; j < sorted.length; j++) {
-            const a = sorted[i], b = sorted[j];
-            const key = [a.id, b.id].sort().join('-');
-            if (rejectedPairs.has(key)) continue;
-            // ── Hard constraints (ΑΠΑΡΑΒΑΤΑ — ισχύουν σε ΟΛΑ τα βήματα) ──
-            if (a.gender !== b.gender) continue;   // ίδιο φύλο
-            if (a.sport  !== b.sport)  continue;   // ίδιο άθλημα
-            if (sameTeam(a.team, b.team)) continue; // διαφορετική ομάδα (αυστηρό)
-            // ── Soft constraints (χαλαρώνουν ανά βήμα) ──
-            const bothAdults = isAdult(a) && isAdult(b);
-            if (!bothAdults && Math.abs(a.year - b.year) > ageDiff) continue;
-            if (Math.abs(a.weight - b.weight) > weightDiff) continue;
-            if (Math.abs(a.exp - b.exp) > expDiff) continue;
-            pairs.push({ a, b, score: scorePair(a, b), key, step: step.label, badgeClass: step.badgeClass, badgeText: step.badgeText });
-        }
+  const { ageDiff, weightDiff, expDiff } = step;
+  const sorted = [...avail].sort((a, b) => b.year - a.year);
+  const pairs  = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const a = sorted[i], b = sorted[j];
+      const key = [a.id, b.id].sort().join('-');
+      if (rejectedPairs.has(key)) continue;
+
+      // ── Hard constraints ──────────────────────────────────────
+      if (a.gender !== b.gender)        continue; // ίδιο φύλο
+      if (a.sport  !== b.sport)         continue; // ίδιο άθλημα
+      if (sameTeam(a.team, b.team))     continue; // διαφορετική ομάδα
+
+      // ── Soft constraints ──────────────────────────────────────
+      if (bothHeavy(a, b)) {
+        // Βαρέα κιλά: μόνο εμπειρία — κιλά & ηλικία παραλείπονται
+        if (Math.abs(a.exp - b.exp) > expDiff) continue;
+      } else {
+        // Κανονικές κατηγορίες
+        const adults = isAdult(a) && isAdult(b);
+        if (!adults && Math.abs(a.year   - b.year)   > ageDiff)    continue;
+        if (           Math.abs(a.weight - b.weight) > weightDiff) continue;
+        if (           Math.abs(a.exp    - b.exp)    > expDiff)    continue;
+      }
+
+      pairs.push({
+        a, b,
+        score: scorePair(a, b),
+        key,
+        badgeClass: step.badgeClass,
+        badgeText:  bothHeavy(a, b) ? '🏋 Βαρέα Κιλά' : step.badgeText,
+      });
     }
-    return pairs.sort((x, y) => y.score - x.score);
+  }
+  return pairs.sort((x, y) => y.score - x.score);
 }
-function findNextPair(){
+
+function findNextPair() {
   if (!isAdmin) { showAlert('mm-alert', '🔒 Απαιτείται σύνδεση Διαχειριστή.', 'warning'); return; }
-  rejectedPairs=new Set();currentPairCandidates=[];generatePair();
+  rejectedPairs = new Set(); currentPairCandidates = []; generatePair();
 }
+
 function generatePair() {
-    const avail = db.athletes.filter(a => !isPaired(a));
-    if (avail.length < 2) { showAlert('mm-alert', 'Δεν υπάρχουν διαθέσιμοι αθλητές.', 'warning'); return; }
-    let allPairs = [];
-    for (const step of PAIRING_STEPS) { allPairs = buildPairs(avail, step); if (allPairs.length) break; }
-    currentPairCandidates = allPairs;
-    if (!allPairs.length) { showAlert('mm-alert', 'Δεν βρέθηκε κατάλληλο ζευγάρι.', 'warning'); return; }
-    renderPairDisplay(allPairs[0].a, allPairs[0].b, allPairs[0].score, allPairs[0].key, allPairs[0].badgeClass, allPairs[0].badgeText);
+  const avail = db.athletes.filter(a => !isPaired(a));
+  if (avail.length < 2) { showAlert('mm-alert', 'Δεν υπάρχουν διαθέσιμοι αθλητές.', 'warning'); return; }
+  showAlert('mm-alert', '', '');
+  let allPairs = [];
+  for (const step of PAIRING_STEPS) {
+    allPairs = buildPairs(avail, step);
+    if (allPairs.length) break;
+  }
+  currentPairCandidates = allPairs;
+  if (!allPairs.length) {
+    showAlert('mm-alert', 'Δεν βρέθηκε κατάλληλο ζευγάρι με κανένα κριτήριο. Ελέγξτε τις Εκκρεμότητες.', 'warning');
+    return;
+  }
+  renderPairDisplay(allPairs[0].a, allPairs[0].b, allPairs[0].score, allPairs[0].key, allPairs[0].badgeClass, allPairs[0].badgeText);
 }
 function renderPairDisplay(a, b, sc, key, badgeClass, badgeText) {
   // Υπολογισμός διαφορών για τις μπάρες προόδου
