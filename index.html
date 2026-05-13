@@ -197,7 +197,6 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     <div id="tab-athletes" class="panel">
       <div class="section-header">
         <div class="section-title">Λίστα Αθλητών</div>
-        <button class="btn btn-secondary btn-sm" onclick="exportAthletes()">⬇ Εξαγωγή CSV Αθλητών</button>
       </div>
       <div class="filter-row">
         <select id="fil-sport" onchange="renderAthletes()">
@@ -228,10 +227,7 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
     <div id="tab-matches" class="panel">
       <div class="section-header">
         <div class="section-title">Επιβεβαιωμένοι Αγώνες</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-success btn-sm" onclick="exportMatchesXLS()">⬇ Εξαγωγή Excel (.xls)</button>
-          <button class="btn btn-secondary btn-sm" onclick="exportMatches()">⬇ Εξαγωγή CSV Αγώνων</button>
-        </div>
+        <button class="btn btn-success btn-sm" onclick="exportMatchesXLS()">⬇ Εξαγωγή Excel (.xls)</button>
       </div>
       <div class="stats-grid" id="match-stats"></div>
       <div id="matches-container"></div>
@@ -349,6 +345,10 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
       <div class="edit-group">
         <label>ΑΓΩΝΕΣ</label>
         <input type="number" id="edit-exp" min="0">
+      </div>
+      <div class="edit-group">
+        <label>ΕΤΟΣ ΓΕΝΝΗΣΕΩΣ</label>
+        <input type="number" id="edit-year" min="1950" max="2024">
       </div>
       <div class="edit-group">
         <label>ΟΜΑΔΑ</label>
@@ -542,6 +542,7 @@ function openEditModal(id){
   document.getElementById('edit-weight').value=a.weight;
   document.getElementById('edit-sport').value=a.sport;
   document.getElementById('edit-exp').value=a.exp;
+  document.getElementById('edit-year').value=a.year;
   document.getElementById('edit-team').value=a.team;
   document.getElementById('edit-name').value=a.name;
   document.getElementById('edit-alert').innerHTML='';
@@ -552,13 +553,27 @@ async function saveEdit() {
     const a = db.athletes.find(x => x.id === editingId);
     if (!a) return;
 
-    const updated = {
-        weight: parseFloat(document.getElementById('edit-weight').value),
-        sport: document.getElementById('edit-sport').value,
-        exp: parseInt(document.getElementById('edit-exp').value),
-        team: document.getElementById('edit-team').value.trim(),
-        name: document.getElementById('edit-name').value.trim()
-    };
+    const nm = document.getElementById('edit-name').value.trim();
+    const tm = document.getElementById('edit-team').value.trim();
+    const w  = parseFloat(document.getElementById('edit-weight').value);
+    const y  = parseInt(document.getElementById('edit-year').value);
+    const ex = parseInt(document.getElementById('edit-exp').value);
+    const sp = document.getElementById('edit-sport').value;
+
+    if (!nm || !tm || !sp) {
+        document.getElementById('edit-alert').innerHTML = '<div class="alert alert-error">Συμπλήρωσε όλα τα πεδία.</div>'; return;
+    }
+    if (isNaN(w) || w < 20 || w > 200) {
+        document.getElementById('edit-alert').innerHTML = '<div class="alert alert-error">Μη έγκυρο βάρος (20–200 kg).</div>'; return;
+    }
+    if (isNaN(y) || y < 1950 || y > 2024) {
+        document.getElementById('edit-alert').innerHTML = '<div class="alert alert-error">Μη έγκυρο έτος (1950–2024).</div>'; return;
+    }
+    if (isNaN(ex) || ex < 0) {
+        document.getElementById('edit-alert').innerHTML = '<div class="alert alert-error">Μη έγκυρος αριθμός αγώνων.</div>'; return;
+    }
+
+    const updated = { name: nm, team: tm, weight: w, year: y, exp: ex, sport: sp };
 
     const { error } = await _supabase.from('athletes').update(updated).eq('id', editingId);
 
