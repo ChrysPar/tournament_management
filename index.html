@@ -804,14 +804,10 @@ function renderAthletes(){
 }
 function renderMatches() {
   const total = db.matches.length;
-  // Αρχικοποίηση στατιστικών
   const sp = { BOX: 0, Kickboxing: 0, MMA: 0 };
-  
-  db.matches.forEach(m => { 
-    // Χρήση optional chaining (?.) σε περίπτωση που ο αθλητής δεν υπάρχει στη βάση
-    const sportName = m.athlete1?.sport;
-    if (sportName && sp[sportName] !== undefined) sp[sportName]++; 
-    else if (sportName) sp[sportName] = 1; 
+  db.matches.forEach(m => {
+    const s = m.athlete1?.sport;
+    if (s) sp[s] = (sp[s] || 0) + 1;
   });
 
   document.getElementById('match-stats').innerHTML = `
@@ -831,8 +827,9 @@ function renderMatches() {
     <th style="color:#FADBD8">🔴 Κόκκινη Γωνία</th><th>Ομάδα</th><th>Έτος</th><th>Κιλά</th>
     <th style="color:#AED6F1">🔵 Μπλε Γωνία</th><th>Ομάδα</th><th>Έτος</th><th>Κιλά</th>
     <th>Άθλημα</th><th>Φύλο</th><th>Ημερομηνία</th>
-  </tr></thead><tbody>${db.matches.map(m => `<tr>
-    <td style="color:var(--text2);font-weight:700">${m.id}</td>
+    ${isAdmin ? '<th></th>' : ''}
+  </tr></thead><tbody>${db.matches.map((m, idx) => `<tr>
+    <td style="color:var(--text2);font-weight:700">${idx + 1}</td>
     <td style="font-weight:600;border-left:3px solid #C0392B">${m.athlete1?.name || '---'}</td>
     <td style="color:var(--text2)">${m.athlete1?.team || '---'}</td>
     <td>${m.athlete1?.year || '---'}</td>
@@ -841,10 +838,42 @@ function renderMatches() {
     <td style="color:var(--text2)">${m.athlete2?.team || '---'}</td>
     <td>${m.athlete2?.year || '---'}</td>
     <td>${m.athlete2?.weight || '---'} kg</td>
-    <td><span class="sport-badge badge-${(m.athlete1?.sport || 'default').replace(/\s/g, '_')}">${m.athlete1?.sport || '---'}</span></td>
+    <td><span class="sport-badge badge-${(m.athlete1?.sport || 'default').replace(/\s/g,'_')}">${m.athlete1?.sport || '---'}</span></td>
     <td>${m.athlete1?.gender || '---'}</td>
     <td style="color:var(--text2);font-size:12px">${m.date}</td>
+    ${isAdmin ? `<td><button class="del-btn" onclick="deleteMatch(${m.id})" title="Διαγραφή αγώνα">✕</button></td>` : ''}
   </tr>`).join('')}</tbody></table>`;
+}
+
+// ── Διαγραφή Αγώνα & Επαναφορά Αθλητών ──────────────────────────
+async function deleteMatch(matchId) {
+  if (!isAdmin) return;
+  if (!confirm('Διαγραφή αγώνα; Οι αθλητές θα επιστρέψουν στις εκκρεμότητες.')) return;
+
+  // Βρες τον αγώνα τοπικά
+  const match = db.matches.find(m => m.id === matchId);
+  if (!match) return;
+
+  const aid1 = match.athlete1?.id;
+  const aid2 = match.athlete2?.id;
+
+  // 1. Διαγραφή από Supabase
+  const { error: delErr } = await _supabase.from('matches').delete().eq('id', matchId);
+  if (delErr) { alert('Σφάλμα διαγραφής αγώνα: ' + delErr.message); return; }
+
+  // 2. Επαναφορά paired=false στους αθλητές στο Supabase
+  if (aid1 && aid2) {
+    await _supabase.from('athletes').update({ paired: false }).in('id', [aid1, aid2]);
+  }
+
+  // 3. Ενημέρωση τοπικής μνήμης
+  db.matches = db.matches.filter(m => m.id !== matchId);
+  if (aid1) { const a = db.athletes.find(x => x.id === aid1); if (a) a.paired = false; }
+  if (aid2) { const a = db.athletes.find(x => x.id === aid2); if (a) a.paired = false; }
+
+  // 4. Ανανέωση UI
+  renderMatches();
+  renderUnpaired();
 }
 
 // ── Βοηθητική: έλεγχος αν αθλητής είναι ζευγαρωμένος
@@ -855,10 +884,11 @@ function isPaired(a) {
 
 // ── Render Unpaired ───────────────────────────────────────────────
 function renderUnpaired() {
-  // Strict φίλτρο: ΜΟΝΟ αθλητές με paired === false (ή null/undefined)
-  const unpaired = db.athletes.filter(a => a.paired === false || a.paired === null || a.paired === undefined || a.paired === 'false');
+  const unpaired = db.athletes.filter(a =>
+    a.paired === false || a.paired === null || a.paired === undefined || a.paired === 'false'
+  );
   const total = unpaired.length;
-  
+
   const countEl = document.getElementById('unpaired-count');
   if (countEl) countEl.textContent = total ? `${total} αθλητές χωρίς ζευγάρι` : '';
 
@@ -868,30 +898,39 @@ function renderUnpaired() {
     return;
   }
 
-  // Group by sport + gender
- const groups = {};
+  // Ομαδοποίηση ανά Άθλημα + Φύλο
+  const groups = {};
   unpaired.forEach(a => {
     const key = `${a.sport}|${a.gender}`;
     if (!groups[key]) groups[key] = { sport: a.sport, gender: a.gender, athletes: [] };
     groups[key].athletes.push(a);
   });
 
-  const parts = Object.values(groups).map(g => {
-    const rows = g.athletes
-      .sort((a, b) => a.year - b.year)
-      .map((a, i) => `<tr style="background:${i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)'}">
+  // Ταξινόμηση ομάδων: Άθλημα αλφαβητικά → Φύλο (Α=Άνδρες πρώτα, Γ=Γυναίκες μετά)
+  const sortedGroups = Object.values(groups).sort((x, y) => {
+    if (x.sport !== y.sport) return x.sport.localeCompare(y.sport, 'el');
+    return x.gender === 'Α' ? -1 : 1; // Α πρώτα
+  });
+
+  const parts = sortedGroups.map(g => {
+    // Ταξινόμηση αθλητών ανά κιλά (αύξουσα)
+    const sorted = [...g.athletes].sort((a, b) => (a.weight || 0) - (b.weight || 0));
+    const rows = sorted.map((a, i) => `
+      <tr style="background:${i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)'}">
         <td style="font-weight:600">${a.name}</td>
         <td>${a.team}</td>
         <td>${a.year}${isAdult(a) ? '<span style="font-size:10px;color:#1A5276;margin-left:4px">18+</span>' : ''}</td>
         <td>${a.weight} kg</td>
         <td>${a.exp}</td>
       </tr>`).join('');
+
+    const genderLabel = g.gender === 'Α' ? 'Άνδρες' : 'Γυναίκες';
     return `
-      <div style="margin-bottom:20px">
+      <div style="margin-bottom:22px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <span class="sport-badge badge-${g.sport.replace(/\s/g, '_')}">${g.sport}</span>
-          <span class="gender-badge ${g.gender === 'Α' ? 'gender-M' : 'gender-F'}">${g.gender}</span>
-          <span style="font-size:13px;color:var(--text2)">${g.athletes.length} αθλητές</span>
+          <span class="sport-badge badge-${g.sport.replace(/\s/g,'_')}">${g.sport}</span>
+          <span class="gender-badge ${g.gender === 'Α' ? 'gender-M' : 'gender-F'}">${genderLabel}</span>
+          <span style="font-size:13px;color:var(--text2)">${sorted.length} αθλητές</span>
         </div>
         <table class="athletes-table">
           <thead><tr>
@@ -904,7 +943,7 @@ function renderUnpaired() {
 
   c.innerHTML = `
     <div class="alert alert-warning" style="margin-bottom:16px">
-      ⚠ <strong>${total} αθλητές</strong> εκκρεμούν. Μπορείτε να τους ζευγαρώσετε από την καρτέλα "Ζευγαροποίηση".
+      ⚠ <strong>${total} αθλητές</strong> εκκρεμούν — ταξινομημένοι ανά Άθλημα / Φύλο / Κιλά.
     </div>
     ${parts}`;
 }
